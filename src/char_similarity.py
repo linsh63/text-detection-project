@@ -12,6 +12,20 @@ from functools import lru_cache
 from pypinyin import Style, lazy_pinyin
 
 
+KEYWORD_VARIANTS: dict[str, tuple[str, ...]] = {
+    "微信": ("薇信", "维信", "胃信", "卫信", "微辛", "薇辛", "胃星", "卫星", "韦欣", "喂新"),
+    "赚钱": ("赚前", "转钱", "赚钳", "赚签", "挣钱", "掙钱", "掙錢"),
+    "返利": ("反利", "返荔", "返立"),
+    "兼职": ("兼直", "蒹职", "兼只", "兼職"),
+    "刷单": ("唰单", "刷旦", "刷箪", "刷單"),
+    "贷款": ("贷款讯", "代款", "贷歀", "貸款"),
+    "信用卡": ("信佣卡", "芯用卡", "信用咔", "信用咭"),
+    "红包": ("红苞", "紅包", "虹包"),
+    "私聊": ("丝聊", "私撩", "私辽"),
+    "加我": ("佳我", "家我", "茄我"),
+}
+
+
 CONFUSABLE_GROUPS: tuple[tuple[str, ...], ...] = (
     ("微", "薇", "维", "唯", "胃", "卫", "魏", "韦", "喂"),
     ("信", "新", "欣", "薪", "芯", "辛", "心"),
@@ -23,10 +37,20 @@ CONFUSABLE_GROUPS: tuple[tuple[str, ...], ...] = (
 
 
 CONFUSABLE_MAP: dict[str, set[str]] = {}
+CANONICAL_CHAR_MAP: dict[str, str] = {}
 for group in CONFUSABLE_GROUPS:
     chars = set(group)
+    canonical = group[0]
     for char in chars:
         CONFUSABLE_MAP.setdefault(char, set()).update(chars - {char})
+        CANONICAL_CHAR_MAP.setdefault(char, canonical)
+
+
+VARIANT_TO_KEYWORD: dict[str, str] = {}
+for keyword, variants in KEYWORD_VARIANTS.items():
+    VARIANT_TO_KEYWORD[keyword] = keyword
+    for variant in variants:
+        VARIANT_TO_KEYWORD[variant] = keyword
 
 
 @lru_cache(maxsize=4096)
@@ -82,3 +106,25 @@ def normalize_variant_word(word: str, threshold: float = 0.75) -> str:
         return canonical
     return word
 
+
+def normalize_text_variants(text: str) -> str:
+    """Normalize known adversarial words to canonical sensitive keywords."""
+    normalized = str(text)
+    for variant, keyword in sorted(
+        VARIANT_TO_KEYWORD.items(),
+        key=lambda item: len(item[0]),
+        reverse=True,
+    ):
+        if variant != keyword:
+            normalized = normalized.replace(variant, keyword)
+    return normalized
+
+
+def canonicalize_confusable_chars(text: str) -> str:
+    """Canonicalize individual confusable characters.
+
+    This is intentionally exposed separately because phrase-level normalization
+    is safer for production use, while character-level canonicalization is useful
+    in controlled ablation experiments.
+    """
+    return "".join(CANONICAL_CHAR_MAP.get(char, char) for char in str(text))

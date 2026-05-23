@@ -12,13 +12,9 @@ env/
 
 models/*.joblib
 models/*.pkl
-reports/figures/*.png
-reports/figures/*.jpg
-reports/figures/*.pdf
 
 data/raw/*
 !data/raw/.gitkeep
 !data/raw/sample_texts.tsv
 data/processed/*
 !data/processed/.gitkeep
-

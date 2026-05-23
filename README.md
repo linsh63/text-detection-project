@@ -15,12 +15,9 @@ text-detection-project/
 ├── data/
 │   ├── raw/                 # 原始数据，默认不提交大数据文件
 │   └── processed/           # 预处理后的数据
+├── docs/                    # baseline、优化过程和实验记录
 ├── models/                  # 训练后的模型
-├── notebooks/               # 实验分析笔记本
-├── reports/                 # 图表、实验结果和报告素材
-├── scripts/                 # 命令行脚本
-├── src/text_detection/      # 项目源码
-└── tests/                   # 单元测试
+└── src/                     # 项目源码、命令行入口和测试
 ```
 
 ## 快速开始
@@ -32,8 +29,21 @@ source .venv/bin/activate
 ./.venv/bin/python -m pip install setuptools wheel
 ./.venv/bin/python -m pip install -r requirements.txt
 ./.venv/bin/python -m pip install -e . --no-build-isolation
-./.venv/bin/python scripts/train_baseline.py --data data/raw/sample_texts.tsv
-./.venv/bin/python scripts/predict.py --text "加我薇信，轻松月入过万"
+./.venv/bin/python -m src.cli prepare-data --raw data/raw/spam_message_labeled.txt --out data/processed/spam_message_20k.tsv --sample-size 20000
+./.venv/bin/python -m src.cli train --data data/processed/spam_message_20k.tsv
+./.venv/bin/python -m src.cli generate-adversarial --data data/processed/spam_message_20k.tsv --out data/processed/adversarial_eval.tsv
+./.venv/bin/python -m src.cli evaluate --data data/processed/adversarial_eval.tsv
+./.venv/bin/python -m src.cli compare-baselines --data data/processed/spam_message_20k.tsv
+./.venv/bin/python -m src.cli generate-keyword-challenge --out data/processed/keyword_challenge.tsv
+./.venv/bin/python -m src.cli compare-csn --data data/processed/spam_message_20k.tsv --adversarial data/processed/keyword_challenge.tsv
+./.venv/bin/python -m src.cli predict --text "加我薇信，轻松月入过万"
+```
+
+如果拿到课程指定 AST 数据集，放到 `data/raw/ast_dataset.tsv` 后运行：
+
+```bash
+./.venv/bin/python -m src.cli prepare-ast --raw data/raw/ast_dataset.tsv --out data/processed/ast_dataset.tsv
+./.venv/bin/python -m src.cli train --data data/processed/ast_dataset.tsv
 ```
 
 ## 数据格式
