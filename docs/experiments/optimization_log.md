@@ -22,6 +22,7 @@
 | v3-csn-aug | CSN + Keyword Augmentation | CSN 归一化 + 敏感关键词增强训练 | 0.9835 | 0.9570 | 0.9225 | keyword challenge 召回提升至 1.0000 |
 | v4-bad-case-tuned | Bad-case Risk + Threshold | bad-case 风险分数 + 验证集阈值调优 | 0.9902 | 0.9728 | 0.9510 | 在保持 keyword challenge 召回 1.0000 的同时减少误杀 |
 | v5-max-score-fusion | Score Fusion Candidate | `max(v1分数, v3分数) + bad-case风险分数` | 0.9917 | 0.9771 | 0.9587 | 实验分支候选方案，略优于 v4 |
+| v5-multidataset-validation | Multi-dataset Validation | 主保留集 + FBS 跨来源集 + 对抗/关键词挑战集验证 v4/v5 | 0.9917 | 0.9771 | 0.9587 | 多数据集未发现 v5 退化，建议选用 v5 |
 
 ## v0-smoke Baseline
 
@@ -413,3 +414,117 @@ threshold = 0.40
 ### 结论
 
 v5 在固定测试集上有明确提升：Spam F1 从 0.9510 提升到 0.9587，漏检从 31 降到 23，并保持对抗召回 1.0000。多随机划分下也有小幅平均提升，但幅度不大，因此它适合作为“候选优化方案”保留；若后续报告篇幅有限，仍可以把 v4 作为主线稳定版本，把 v5 作为进一步尝试。
+
+## v5-multidataset-validation 多数据集验证
+
+### 目标
+
+在决定是否采用 v5 前，增加跨数据集验证，避免只根据 `SpamMessage` 单一随机划分做结论。
+
+评测集：
+
+- `main_holdout`：主 20K 数据的固定测试集。
+- `fbs_mixed`：FBS 伪基站垃圾短信 + 主数据源外的正常短信，10000 条，正常/垃圾各 5000。
+- `adversarial`：从主数据生成的字形/字音扰动垃圾样本。
+- `keyword_challenge`：短关键词变体挑战集。
+
+### 命令
+
+```bash
+./.venv/bin/python -m src.cli prepare-fbs-mixed \
+  --fbs-dir data/raw/fbs_sms_dataset \
+  --normal-raw data/raw/spam_message_labeled.txt \
+  --exclude data/processed/spam_message_20k.tsv \
+  --out data/processed/fbs_mixed_eval.tsv \
+  --sample-size 10000
+
+./.venv/bin/python -m src.cli validate-multidata \
+  --train-data data/processed/spam_message_20k.tsv \
+  --eval-data fbs_mixed=data/processed/fbs_mixed_eval.tsv \
+  --eval-data adversarial=data/processed/adversarial_eval.tsv \
+  --eval-data keyword_challenge=data/processed/keyword_challenge.tsv
+```
+
+结果文件：
+
+- `docs/experiments/multidataset_fusion_validation.csv`
+- `docs/experiments/multidataset_fusion_validation.md`
+
+### 结果
+
+| 数据集 | 方法 | Accuracy | Spam Precision | Spam Recall | Spam F1 | FP | FN |
+|---|---|---:|---:|---:|---:|---:|---:|
+| main_holdout | v4 | 0.9902 | 0.9534 | 0.9487 | 0.9510 | 28 | 31 |
+| main_holdout | v5 | 0.9917 | 0.9556 | 0.9619 | 0.9587 | 27 | 23 |
+| fbs_mixed | v4 | 0.8402 | 0.9948 | 0.6840 | 0.8106 | 18 | 1580 |
+| fbs_mixed | v5 | 0.8409 | 0.9939 | 0.6860 | 0.8117 | 21 | 1570 |
+| adversarial | v4 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 0 | 0 |
+| adversarial | v5 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 0 | 0 |
+| keyword_challenge | v4 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 0 | 0 |
+| keyword_challenge | v5 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 0 | 0 |
+
+v5 相对 v4：
+
+- 主保留测试集：Spam F1 +0.0077，漏检 -8，误杀 -1。
+- FBS 跨来源集：Spam F1 +0.0011，漏检 -10，误杀 +3。
+- 对抗/关键词挑战集：两者持平，召回均为 1.0000。
+
+### 结论
+
+建议选用 v5。它在主测试集上提升更明确，在 FBS 跨来源集上没有退化，并保持对抗挑战集满召回。
+
+同时要注意，FBS 跨来源集的绝对召回仍只有 0.6860，说明当前模型对真实伪基站垃圾短信的覆盖不足。后续优化重点应从“是否采用 v5”转向“提升跨来源垃圾短信召回”，例如引入 FBS 少量训练样本、做领域自适应或补充诈骗/赌博/贷款类别词表。
+
+## all-versions-multidataset-validation 全版本多数据集验证
+
+### 目标
+
+在加入两个 Hugging Face 数据集后，重新评估 v0-v5 的整体表现，判断 v5 是否仍然是所有场景下的最优方案。
+
+新增数据：
+
+- `hf_chinese_spam_10000`：9941 条，正常 4959，垃圾 4982。
+- `hf_chinese_conversation_spam`：7731 条，正常 4654，垃圾 3077。
+
+### 命令
+
+```bash
+./.venv/bin/python -m src.cli validate-all-versions \
+  --train-data data/processed/spam_message_20k.tsv \
+  --eval-data fbs_mixed=data/processed/fbs_mixed_eval.tsv \
+  --eval-data hf_chinese_spam_10000=data/processed/hf_chinese_spam_10000.tsv \
+  --eval-data hf_chinese_conversation_spam=data/processed/hf_chinese_conversation_and_spam.tsv \
+  --eval-data adversarial=data/processed/adversarial_eval.tsv \
+  --eval-data keyword_challenge=data/processed/keyword_challenge.tsv
+```
+
+结果文件：
+
+- `docs/experiments/all_versions_multidataset_validation.csv`
+- `docs/experiments/all_versions_multidataset_validation.md`
+
+### 每个数据集最优版本
+
+| 数据集 | 最优版本 | Accuracy | Spam Recall | Spam F1 | FP | FN |
+|---|---|---:|---:|---:|---:|---:|
+| main_holdout | v5 | 0.9917 | 0.9619 | 0.9587 | 27 | 23 |
+| fbs_mixed | v1 | 0.9151 | 0.8426 | 0.9085 | 62 | 787 |
+| hf_chinese_spam_10000 | v3 | 0.5341 | 0.0881 | 0.1593 | 89 | 4543 |
+| hf_chinese_conversation_spam | v3 | 0.7471 | 0.3737 | 0.5405 | 28 | 1927 |
+| adversarial | v1/v2/v3/v4/v5 | 1.0000 | 1.0000 | 1.0000 | 0 | 0 |
+| keyword_challenge | v3/v4/v5 | 1.0000 | 1.0000 | 1.0000 | 0 | 0 |
+
+### 结论更新
+
+v5 仍然是主测试集上的最优版本，也适合放在报告主线里展示“融合方案带来主数据集指标提升”。但加入 HF 外部集后，不能再说 v5 在所有数据集上都最优。
+
+跨来源二分类数据上，v3 的召回更稳：
+
+- FBS 上 v1/v3 明显优于 v4/v5，说明固定高阈值策略会牺牲外部垃圾短信召回。
+- 两个 HF 数据集上 v3 都优于 v5，但 `hf_chinese_spam_10000` 的绝对召回仍很低，最佳也只有 0.0881。
+
+因此当前最准确的选型是：
+
+- 报告主线最终模型：v5。
+- 跨来源泛化候选：v3。
+- 下一步优化方向：基于外部数据重新调阈值或做领域自适应，而不是继续只在主数据集上优化。

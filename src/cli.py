@@ -4,17 +4,36 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 from .data.adversarial import generate_adversarial_dataset, generate_keyword_challenge_dataset
-from .data.datasets import dataset_summary, prepare_ast_dataset, prepare_labeled_dataset
+from .data.datasets import (
+    dataset_summary,
+    prepare_ast_dataset,
+    prepare_fbs_mixed_dataset,
+    prepare_labeled_dataset,
+)
 from .experiments.runners import (
+    compare_all_versions_multidataset_validation,
     compare_bad_case_optimization,
     compare_baselines,
     compare_csn_optimization,
+    compare_multidataset_fusion_validation,
     compare_score_fusion_optimization,
 )
 from .models.modeling import evaluate_model, predict_text, train_baseline
 from .reporting.visualization import generate_report_assets
+
+
+def _parse_named_paths(values: list[str]) -> list[tuple[str, str]]:
+    parsed: list[tuple[str, str]] = []
+    for value in values:
+        if "=" in value:
+            name, path = value.split("=", 1)
+            parsed.append((name.strip(), path.strip()))
+        else:
+            parsed.append((Path(value).stem, value))
+    return parsed
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -32,6 +51,18 @@ def build_parser() -> argparse.ArgumentParser:
     ast_parser.add_argument("--out", default="data/processed/ast_dataset.tsv")
     ast_parser.add_argument("--sample-size", type=int)
     ast_parser.add_argument("--random-state", type=int, default=42)
+
+    fbs_parser = subparsers.add_parser(
+        "prepare-fbs-mixed",
+        help="Build a binary cross-source dataset from FBS spam and local normal texts",
+    )
+    fbs_parser.add_argument("--fbs-dir", required=True)
+    fbs_parser.add_argument("--normal-raw", required=True)
+    fbs_parser.add_argument("--out", default="data/processed/fbs_mixed_eval.tsv")
+    fbs_parser.add_argument("--sample-size", type=int, default=10000)
+    fbs_parser.add_argument("--spam-ratio", type=float, default=0.5)
+    fbs_parser.add_argument("--exclude")
+    fbs_parser.add_argument("--random-state", type=int, default=42)
 
     adversarial_parser = subparsers.add_parser(
         "generate-adversarial",
@@ -110,6 +141,52 @@ def build_parser() -> argparse.ArgumentParser:
     fusion_parser.add_argument("--validation-size", type=float, default=0.2)
     fusion_parser.add_argument("--random-state", type=int, default=42)
 
+    multidata_parser = subparsers.add_parser(
+        "validate-multidata",
+        help="Validate v4/v5 on the main holdout plus named external datasets",
+    )
+    multidata_parser.add_argument("--train-data", required=True)
+    multidata_parser.add_argument(
+        "--eval-data",
+        action="append",
+        default=[],
+        help="Named eval set in name=path form. Can be repeated.",
+    )
+    multidata_parser.add_argument(
+        "--out-csv",
+        default="docs/experiments/multidataset_fusion_validation.csv",
+    )
+    multidata_parser.add_argument(
+        "--out-md",
+        default="docs/experiments/multidataset_fusion_validation.md",
+    )
+    multidata_parser.add_argument("--test-size", type=float, default=0.3)
+    multidata_parser.add_argument("--validation-size", type=float, default=0.2)
+    multidata_parser.add_argument("--random-state", type=int, default=42)
+
+    all_versions_parser = subparsers.add_parser(
+        "validate-all-versions",
+        help="Validate v0-v5 on the main holdout plus named external datasets",
+    )
+    all_versions_parser.add_argument("--train-data", required=True)
+    all_versions_parser.add_argument(
+        "--eval-data",
+        action="append",
+        default=[],
+        help="Named eval set in name=path form. Can be repeated.",
+    )
+    all_versions_parser.add_argument(
+        "--out-csv",
+        default="docs/experiments/all_versions_multidataset_validation.csv",
+    )
+    all_versions_parser.add_argument(
+        "--out-md",
+        default="docs/experiments/all_versions_multidataset_validation.md",
+    )
+    all_versions_parser.add_argument("--test-size", type=float, default=0.3)
+    all_versions_parser.add_argument("--validation-size", type=float, default=0.2)
+    all_versions_parser.add_argument("--random-state", type=int, default=42)
+
     return parser
 
 
@@ -152,6 +229,20 @@ def main() -> None:
         print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
         if summary != {"rows": 16008, "normal": 5000, "spam": 11008}:
             print("Warning: dataset counts differ from the course PDF AST description.")
+        return
+
+    if args.command == "prepare-fbs-mixed":
+        data = prepare_fbs_mixed_dataset(
+            args.fbs_dir,
+            args.normal_raw,
+            args.out,
+            sample_size=args.sample_size,
+            spam_ratio=args.spam_ratio,
+            exclude_path=args.exclude,
+            random_state=args.random_state,
+        )
+        print(f"Saved FBS mixed dataset to: {args.out}")
+        print(json.dumps(dataset_summary(data), ensure_ascii=False, indent=2, sort_keys=True))
         return
 
     if args.command == "generate-adversarial":
@@ -307,6 +398,62 @@ def main() -> None:
                     "clean_false_positive",
                     "clean_false_negative",
                     "adv_recall_spam",
+                ]
+            ].to_string(index=False)
+        )
+        return
+
+    if args.command == "validate-multidata":
+        results = compare_multidataset_fusion_validation(
+            train_data_path=args.train_data,
+            eval_data_paths=_parse_named_paths(args.eval_data),
+            output_csv=args.out_csv,
+            output_md=args.out_md,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            random_state=args.random_state,
+        )
+        print(f"Saved CSV to: {args.out_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(
+            results[
+                [
+                    "dataset",
+                    "name",
+                    "accuracy",
+                    "precision_spam",
+                    "recall_spam",
+                    "f1_spam",
+                    "false_positive",
+                    "false_negative",
+                ]
+            ].to_string(index=False)
+        )
+        return
+
+    if args.command == "validate-all-versions":
+        results = compare_all_versions_multidataset_validation(
+            train_data_path=args.train_data,
+            eval_data_paths=_parse_named_paths(args.eval_data),
+            output_csv=args.out_csv,
+            output_md=args.out_md,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            random_state=args.random_state,
+        )
+        print(f"Saved CSV to: {args.out_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(
+            results[
+                [
+                    "dataset",
+                    "name",
+                    "accuracy",
+                    "precision_spam",
+                    "recall_spam",
+                    "f1_spam",
+                    "false_positive",
+                    "false_negative",
                 ]
             ].to_string(index=False)
         )

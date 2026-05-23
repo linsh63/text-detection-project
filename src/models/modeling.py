@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -132,6 +133,9 @@ def _recall_at_precision(y_true, y_score, threshold: float) -> float:
 
 def evaluate_predictions(y_true, y_pred, y_score=None) -> dict[str, float]:
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        balanced_accuracy = balanced_accuracy_score(y_true, y_pred)
     metrics = {
         "accuracy": float(accuracy_score(y_true, y_pred)),
         "precision_spam": float(precision_score(y_true, y_pred, zero_division=0)),
@@ -139,7 +143,7 @@ def evaluate_predictions(y_true, y_pred, y_score=None) -> dict[str, float]:
         "f1_spam": float(f1_score(y_true, y_pred, zero_division=0)),
         "macro_f1": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
         "weighted_f1": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
-        "balanced_accuracy": float(balanced_accuracy_score(y_true, y_pred)),
+        "balanced_accuracy": float(balanced_accuracy),
         "false_positive_rate": float(fp / (fp + tn)) if (fp + tn) else 0.0,
         "true_negative": float(tn),
         "false_positive": float(fp),

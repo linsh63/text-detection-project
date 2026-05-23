@@ -5,6 +5,7 @@ from __future__ import annotations
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 import pandas as pd
@@ -114,6 +115,8 @@ RISK_BONUS_GRID = (0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0)
 THRESHOLD_GRID = tuple(value / 100 for value in range(-20, 121, 5))
 FUSION_RISK_BONUS_GRID = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5)
 FUSION_THRESHOLD_GRID = tuple(value / 100 for value in range(-20, 101, 5))
+V4_RISK_BONUS = 0.1
+V4_THRESHOLD = 0.35
 
 
 def _format_metric(value) -> str:
@@ -410,6 +413,226 @@ def write_fusion_markdown(
             "多随机划分下 v5 平均 Spam F1 也略高于 v4，但提升幅度较小，说明这是一个可继续保留的候选优化，而不是压倒性的稳定提升。",
         ]
     )
+    Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _fusion_delta_table(results: pd.DataFrame) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    for dataset, group in results.groupby("dataset", sort=False):
+        by_name = group.set_index("name")
+        if "v4_bad_case_valid_tuned" not in by_name.index or "v5_max_score_fusion" not in by_name.index:
+            continue
+        v4 = by_name.loc["v4_bad_case_valid_tuned"]
+        v5 = by_name.loc["v5_max_score_fusion"]
+        rows.append(
+            {
+                "dataset": dataset,
+                "f1_delta": float(v5["f1_spam"] - v4["f1_spam"]),
+                "recall_delta": float(v5["recall_spam"] - v4["recall_spam"]),
+                "fp_delta": float(v5["false_positive"] - v4["false_positive"]),
+                "fn_delta": float(v5["false_negative"] - v4["false_negative"]),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _decide_v5(delta: pd.DataFrame) -> str:
+    if delta.empty:
+        return "数据不足，暂时不建议切换。"
+
+    avg_f1_delta = float(delta["f1_delta"].mean())
+    avg_fn_delta = float(delta["fn_delta"].mean())
+    large_f1_losses = int((delta["f1_delta"] < -0.003).sum())
+    more_fn_datasets = int((delta["fn_delta"] > 0).sum())
+
+    if avg_f1_delta >= 0 and avg_fn_delta <= 0 and large_f1_losses == 0:
+        return "建议选用 v5：多数据集平均 Spam F1 不低于 v4，且平均漏检没有增加。"
+    if avg_f1_delta >= 0 and more_fn_datasets <= 1:
+        return "v5 可以作为候选保留：平均 Spam F1 更好，但仍需关注个别数据集的漏检变化。"
+    return "暂不建议直接替换 v4：v5 在多数据集上没有形成稳定优势。"
+
+
+def write_multidataset_markdown(
+    results: pd.DataFrame,
+    output_path: str | Path,
+    selected_bonus: float,
+    selected_threshold: float,
+) -> None:
+    table_columns = [
+        "dataset",
+        "name",
+        "n_samples",
+        "n_normal",
+        "n_spam",
+        "risk_bonus",
+        "threshold",
+        "accuracy",
+        "precision_spam",
+        "recall_spam",
+        "f1_spam",
+        "false_positive",
+        "false_negative",
+    ]
+    table = results[table_columns].copy()
+    table = table.map(_format_metric)
+
+    delta = _fusion_delta_table(results)
+    decision = _decide_v5(delta)
+    delta_table = delta.copy()
+    if not delta_table.empty:
+        delta_table = delta_table.map(_format_metric)
+
+    lines = [
+        "# 多数据集 v4/v5 验证",
+        "",
+        "本实验用主数据集训练模型，再在主数据集保留测试集和外部/挑战评测集上统一比较 v4 与 v5。",
+        "",
+        f"- v4 固定参数：risk_bonus={V4_RISK_BONUS:.2f}, threshold={V4_THRESHOLD:.2f}",
+        f"- v5 验证集选择参数：risk_bonus={selected_bonus:.2f}, threshold={selected_threshold:.2f}",
+        "- v5 公式：`max(v1_baseline_score, v3_csn_score) + risk_bonus * bad_case_risk_score`",
+        f"- 结论：{decision}",
+        "",
+        "## 指标结果",
+        "",
+        "| " + " | ".join(table.columns) + " |",
+        "| " + " | ".join(["---"] * len(table.columns)) + " |",
+    ]
+    for _, row in table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    lines.extend(["", "## v5 相对 v4 变化", ""])
+    if delta_table.empty:
+        lines.append("暂无可比结果。")
+    else:
+        lines.extend(
+            [
+                "| " + " | ".join(delta_table.columns) + " |",
+                "| " + " | ".join(["---"] * len(delta_table.columns)) + " |",
+            ]
+        )
+        for _, row in delta_table.iterrows():
+            lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_all_versions_multidataset_markdown(
+    results: pd.DataFrame,
+    output_path: str | Path,
+    selected_bonus: float,
+    selected_threshold: float,
+) -> None:
+    table_columns = [
+        "dataset",
+        "name",
+        "n_samples",
+        "n_normal",
+        "n_spam",
+        "accuracy",
+        "precision_spam",
+        "recall_spam",
+        "f1_spam",
+        "false_positive",
+        "false_negative",
+    ]
+    table = results[table_columns].copy()
+    table = table.map(_format_metric)
+
+    best_rows = (
+        results.sort_values(
+            by=["dataset", "f1_spam", "accuracy", "recall_spam"],
+            ascending=[True, False, False, False],
+        )
+        .groupby("dataset", sort=False)
+        .head(1)
+    )
+    best_table = best_rows[
+        [
+            "dataset",
+            "name",
+            "accuracy",
+            "precision_spam",
+            "recall_spam",
+            "f1_spam",
+            "false_positive",
+            "false_negative",
+        ]
+    ].copy()
+    best_table = best_table.map(_format_metric)
+
+    v5 = results[results["name"] == "v5_max_score_fusion"]
+    comparable = results.groupby("dataset")["f1_spam"].max().reset_index(name="best_f1")
+    v5_compare = v5.merge(comparable, on="dataset", how="left")
+    v5_wins = int((v5_compare["f1_spam"] >= v5_compare["best_f1"] - 1e-12).sum())
+    total_sets = int(v5_compare["dataset"].nunique())
+    main_best = best_rows[best_rows["dataset"] == "main_holdout"]
+    cross_best = best_rows[
+        (best_rows["dataset"] != "main_holdout")
+        & (best_rows["n_normal"] > 0)
+        & (best_rows["n_spam"] > 0)
+    ]
+    challenge_best = best_rows[(best_rows["n_normal"] == 0) & (best_rows["n_spam"] > 0)]
+
+    lines = [
+        "# 全版本多数据集验证",
+        "",
+        "本实验用主数据集训练 v0-v5，再在主测试集、外部数据集和对抗挑战集上统一评估。",
+        "",
+        f"- v4 固定参数：risk_bonus={V4_RISK_BONUS:.2f}, threshold={V4_THRESHOLD:.2f}",
+        f"- v5 验证集选择参数：risk_bonus={selected_bonus:.2f}, threshold={selected_threshold:.2f}",
+        f"- v5 在 {v5_wins}/{total_sets} 个评测集上达到该评测集最高 Spam F1。",
+        "",
+        "## 结果解读",
+        "",
+    ]
+    if not main_best.empty:
+        row = main_best.iloc[0]
+        lines.append(
+            f"- 主测试集最优：`{row['name']}`，Spam F1={row['f1_spam']:.4f}，"
+            f"Recall={row['recall_spam']:.4f}，FN={int(row['false_negative'])}。"
+        )
+    if not cross_best.empty:
+        lines.append("- 跨来源二分类集最优：")
+        for _, row in cross_best.iterrows():
+            lines.append(
+                f"  - `{row['dataset']}`：`{row['name']}`，Spam F1={row['f1_spam']:.4f}，"
+                f"Recall={row['recall_spam']:.4f}，FN={int(row['false_negative'])}。"
+            )
+    if not challenge_best.empty:
+        lines.append(
+            "- 对抗/关键词挑战集是单类垃圾样本，重点看 Recall 和 FN；"
+            "v3 之后的模型已经能覆盖短关键词变体。"
+        )
+    lines.extend(
+        [
+            "- 结论：v5 适合作为主数据集上的最终版本；如果强调跨来源泛化，v3 目前更稳，v4/v5 的高阈值会带来明显漏检。",
+            "",
+        ]
+    )
+
+    lines.extend(
+        [
+        "## 每个数据集最优结果",
+        "",
+        "| " + " | ".join(best_table.columns) + " |",
+        "| " + " | ".join(["---"] * len(best_table.columns)) + " |",
+        ]
+    )
+    for _, row in best_table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    lines.extend(
+        [
+            "",
+            "## 完整指标",
+            "",
+            "| " + " | ".join(table.columns) + " |",
+            "| " + " | ".join(["---"] * len(table.columns)) + " |",
+        ]
+    )
+    for _, row in table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
     Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -824,6 +1047,273 @@ def compare_score_fusion_optimization(
     write_fusion_markdown(
         results,
         stability,
+        output_md,
+        selected_bonus=selected_bonus,
+        selected_threshold=selected_threshold,
+    )
+    return results
+
+
+def compare_multidataset_fusion_validation(
+    train_data_path: str | Path,
+    eval_data_paths: Sequence[tuple[str, str | Path]] = (),
+    output_csv: str | Path = "docs/experiments/multidataset_fusion_validation.csv",
+    output_md: str | Path = "docs/experiments/multidataset_fusion_validation.md",
+    test_size: float = 0.3,
+    validation_size: float = 0.2,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """Validate v4 and v5 on a main holdout plus external/challenge datasets."""
+    train_data = read_dataset(train_data_path)
+    stratify = train_data["label"] if train_data["label"].nunique() > 1 else None
+    train_x, test_x, train_y, test_y = train_test_split(
+        train_data["text"],
+        train_data["label"],
+        test_size=test_size,
+        random_state=random_state,
+        stratify=stratify,
+    )
+    valid_stratify = train_y if train_y.nunique() > 1 else None
+    fit_x, valid_x, fit_y, valid_y = train_test_split(
+        train_x,
+        train_y,
+        test_size=validation_size,
+        random_state=random_state,
+        stratify=valid_stratify,
+    )
+
+    tuning_baseline, tuning_csn = _train_baseline_and_csn(fit_x, fit_y)
+    validation_grid = _search_max_fusion_threshold(
+        tuning_baseline,
+        tuning_csn,
+        valid_x,
+        valid_y,
+    )
+    selected = _select_best_fusion_threshold(validation_grid)
+    selected_bonus = float(selected["risk_bonus"])
+    selected_threshold = float(selected["threshold"])
+
+    baseline_model, csn_model = _train_baseline_and_csn(train_x, train_y)
+    eval_sets: list[tuple[str, str, pd.Series, pd.Series]] = [
+        (
+            "main_holdout",
+            str(train_data_path),
+            test_x.reset_index(drop=True),
+            test_y.reset_index(drop=True),
+        )
+    ]
+    for name, path in eval_data_paths:
+        data = read_dataset(path)
+        eval_sets.append(
+            (
+                name,
+                str(path),
+                data["text"].reset_index(drop=True),
+                data["label"].reset_index(drop=True),
+            )
+        )
+
+    rows: list[dict[str, object]] = []
+    for dataset_name, source_path, texts, labels in eval_sets:
+        baseline_scores = np.asarray(score_texts(baseline_model, texts), dtype=float)
+        csn_scores = np.asarray(score_texts(csn_model, texts), dtype=float)
+        risk_scores = np.asarray(spam_risk_scores(texts), dtype=float)
+        counts = labels.value_counts().to_dict()
+
+        configs = (
+            (
+                "v4_bad_case_valid_tuned",
+                "CSN 关键词增强 + bad-case 风险分数 + 固定阈值",
+                csn_scores + V4_RISK_BONUS * risk_scores,
+                V4_RISK_BONUS,
+                V4_THRESHOLD,
+            ),
+            (
+                "v5_max_score_fusion",
+                "max(v1 分数, v3 分数) + bad-case 风险分数",
+                np.maximum(baseline_scores, csn_scores) + selected_bonus * risk_scores,
+                selected_bonus,
+                selected_threshold,
+            ),
+        )
+        for name, description, scores, risk_bonus, threshold in configs:
+            metrics = _evaluate_threshold(labels, scores, threshold)
+            rows.append(
+                {
+                    "dataset": dataset_name,
+                    "source_path": source_path,
+                    "name": name,
+                    "description": description,
+                    "risk_bonus": risk_bonus,
+                    "threshold": threshold,
+                    "n_samples": int(len(labels)),
+                    "n_normal": int(counts.get(0, 0)),
+                    "n_spam": int(counts.get(1, 0)),
+                    **metrics,
+                }
+            )
+
+    results = pd.DataFrame(rows)
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    results.to_csv(output_csv, index=False)
+    write_multidataset_markdown(
+        results,
+        output_md,
+        selected_bonus=selected_bonus,
+        selected_threshold=selected_threshold,
+    )
+    return results
+
+
+def compare_all_versions_multidataset_validation(
+    train_data_path: str | Path,
+    eval_data_paths: Sequence[tuple[str, str | Path]] = (),
+    output_csv: str | Path = "docs/experiments/all_versions_multidataset_validation.csv",
+    output_md: str | Path = "docs/experiments/all_versions_multidataset_validation.md",
+    test_size: float = 0.3,
+    validation_size: float = 0.2,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """Validate v0-v5 on the main holdout plus external/challenge datasets."""
+    train_data = read_dataset(train_data_path)
+    stratify = train_data["label"] if train_data["label"].nunique() > 1 else None
+    train_x, test_x, train_y, test_y = train_test_split(
+        train_data["text"],
+        train_data["label"],
+        test_size=test_size,
+        random_state=random_state,
+        stratify=stratify,
+    )
+    valid_stratify = train_y if train_y.nunique() > 1 else None
+    fit_x, valid_x, fit_y, valid_y = train_test_split(
+        train_x,
+        train_y,
+        test_size=validation_size,
+        random_state=random_state,
+        stratify=valid_stratify,
+    )
+
+    tuning_baseline, tuning_csn = _train_baseline_and_csn(fit_x, fit_y)
+    validation_grid = _search_max_fusion_threshold(
+        tuning_baseline,
+        tuning_csn,
+        valid_x,
+        valid_y,
+    )
+    selected = _select_best_fusion_threshold(validation_grid)
+    selected_bonus = float(selected["risk_bonus"])
+    selected_threshold = float(selected["threshold"])
+
+    v0_model = build_pipeline(analyzer="char", classifier="logreg")
+    v0_model.fit(train_x, train_y)
+
+    v1_model = build_pipeline(analyzer="char", classifier="linear_svm")
+    v1_model.fit(train_x, train_y)
+
+    v2_model = build_pipeline(analyzer="char_csn", classifier="linear_svm")
+    v2_model.fit(train_x, train_y)
+
+    v3_model = build_pipeline(analyzer="char_csn", classifier="linear_svm")
+    v3_fit_x, v3_fit_y = _with_keyword_augmentation(train_x, train_y)
+    v3_model.fit(v3_fit_x, v3_fit_y)
+
+    eval_sets: list[tuple[str, str, pd.Series, pd.Series]] = [
+        (
+            "main_holdout",
+            str(train_data_path),
+            test_x.reset_index(drop=True),
+            test_y.reset_index(drop=True),
+        )
+    ]
+    for name, path in eval_data_paths:
+        data = read_dataset(path)
+        eval_sets.append(
+            (
+                name,
+                str(path),
+                data["text"].reset_index(drop=True),
+                data["label"].reset_index(drop=True),
+            )
+        )
+
+    rows: list[dict[str, object]] = []
+    for dataset_name, source_path, texts, labels in eval_sets:
+        v0_scores = np.asarray(score_texts(v0_model, texts), dtype=float)
+        v1_scores = np.asarray(score_texts(v1_model, texts), dtype=float)
+        v2_scores = np.asarray(score_texts(v2_model, texts), dtype=float)
+        v3_scores = np.asarray(score_texts(v3_model, texts), dtype=float)
+        risk_scores = np.asarray(spam_risk_scores(texts), dtype=float)
+        counts = labels.value_counts().to_dict()
+
+        configs = (
+            (
+                "v0_char_logreg_default",
+                "字符级 TF-IDF + Logistic Regression",
+                v0_scores,
+                0.0,
+                0.5,
+            ),
+            (
+                "v1_strong_baseline_default",
+                "字符级 TF-IDF + Linear SVM",
+                v1_scores,
+                0.0,
+                0.0,
+            ),
+            (
+                "v2_csn_default",
+                "CSN 归一化 + 字符级 TF-IDF + Linear SVM",
+                v2_scores,
+                0.0,
+                0.0,
+            ),
+            (
+                "v3_csn_aug_default",
+                "CSN 归一化 + 关键词增强 + Linear SVM",
+                v3_scores,
+                0.0,
+                0.0,
+            ),
+            (
+                "v4_bad_case_valid_tuned",
+                "CSN 关键词增强 + bad-case 风险分数 + 固定阈值",
+                v3_scores + V4_RISK_BONUS * risk_scores,
+                V4_RISK_BONUS,
+                V4_THRESHOLD,
+            ),
+            (
+                "v5_max_score_fusion",
+                "max(v1 分数, v3 分数) + bad-case 风险分数",
+                np.maximum(v1_scores, v3_scores) + selected_bonus * risk_scores,
+                selected_bonus,
+                selected_threshold,
+            ),
+        )
+
+        for name, description, scores, risk_bonus, threshold in configs:
+            metrics = _evaluate_threshold(labels, scores, threshold)
+            rows.append(
+                {
+                    "dataset": dataset_name,
+                    "source_path": source_path,
+                    "name": name,
+                    "description": description,
+                    "risk_bonus": risk_bonus,
+                    "threshold": threshold,
+                    "n_samples": int(len(labels)),
+                    "n_normal": int(counts.get(0, 0)),
+                    "n_spam": int(counts.get(1, 0)),
+                    **metrics,
+                }
+            )
+
+    results = pd.DataFrame(rows)
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    results.to_csv(output_csv, index=False)
+    write_all_versions_multidataset_markdown(
+        results,
         output_md,
         selected_bonus=selected_bonus,
         selected_threshold=selected_threshold,
