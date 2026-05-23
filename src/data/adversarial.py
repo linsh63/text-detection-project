@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .char_similarity import KEYWORD_VARIANTS
+from ..features.char_similarity import KEYWORD_VARIANTS
 
 
 def replace_with_variant(text: str, rng: random.Random) -> tuple[str, str]:

@@ -6,5 +6,4 @@ __all__ = [
     "word_tokenize",
 ]
 
-from .preprocess import char_tokenize, clean_text, word_tokenize
-
+from .features.preprocess import char_tokenize, clean_text, word_tokenize

@@ -1,5 +1,5 @@
-from src.char_similarity import normalize_variant_word
-from src.preprocess import char_tokenize, clean_text
+from src.features.char_similarity import normalize_variant_word
+from src.features.preprocess import char_tokenize, clean_text
 
 
 def test_clean_text_removes_punctuation():
