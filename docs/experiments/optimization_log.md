@@ -165,8 +165,8 @@ Confusion Matrix: [[0, 0], [1, 130]]
 
 结果文件：
 
-- `docs/baseline_comparison.csv`
-- `docs/baseline_comparison.md`
+- `docs/experiments/baseline_comparison.csv`
+- `docs/experiments/baseline_comparison.md`
 
 核心结果：
 
@@ -215,8 +215,8 @@ Confusion Matrix: [[0, 0], [1, 130]]
 
 结果文件：
 
-- `docs/csn_comparison.csv`
-- `docs/csn_comparison.md`
+- `docs/experiments/csn_comparison.csv`
+- `docs/experiments/csn_comparison.md`
 
 未做关键词增强时：
 
@@ -293,11 +293,11 @@ v3 的主要问题是误杀增多：默认阈值下，普通测试集 False Posi
 
 结果文件：
 
-- `docs/bad_case_optimization.csv`
-- `docs/bad_case_optimization.md`
-- `docs/bad_case_tuning_grid.csv`
+- `docs/experiments/bad_case_optimization.csv`
+- `docs/experiments/bad_case_optimization.md`
+- `docs/experiments/bad_case_tuning_grid.csv`
 - `docs/figures/model_comparison.svg`
-- `docs/report_summary.md`
+- `docs/reports/report_summary.md`
 
 验证集选中参数：
 
@@ -383,9 +383,9 @@ git switch main
 
 结果文件：
 
-- `docs/fusion_experiment.csv`
-- `docs/fusion_experiment.md`
-- `docs/fusion_stability.csv`
+- `docs/experiments/fusion_experiment.csv`
+- `docs/experiments/fusion_experiment.md`
+- `docs/experiments/fusion_stability.csv`
 
 ### 结果
 

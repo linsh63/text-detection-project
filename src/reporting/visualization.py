@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from os.path import relpath
 from pathlib import Path
 
 import pandas as pd
@@ -147,7 +148,7 @@ def _panel_svg(
 
 
 def generate_model_comparison_svg(
-    input_csv: str | Path = "docs/bad_case_optimization.csv",
+    input_csv: str | Path = "docs/experiments/bad_case_optimization.csv",
     output_svg: str | Path = "docs/figures/model_comparison.svg",
 ) -> Path:
     """Create a four-panel SVG comparing v1, v3 and v4."""
@@ -199,15 +200,15 @@ def generate_model_comparison_svg(
 
 
 def write_report_summary(
-    input_csv: str | Path = "docs/bad_case_optimization.csv",
+    input_csv: str | Path = "docs/experiments/bad_case_optimization.csv",
     figure_path: str | Path = "docs/figures/model_comparison.svg",
-    output_md: str | Path = "docs/report_summary.md",
+    output_md: str | Path = "docs/reports/report_summary.md",
 ) -> Path:
     """Write a concise report-ready experiment summary."""
     data = _load_chart_data(input_csv).set_index("name")
     output_md = Path(output_md)
     output_md.parent.mkdir(parents=True, exist_ok=True)
-    figure_rel = Path(figure_path).relative_to(output_md.parent)
+    figure_rel = Path(relpath(figure_path, start=output_md.parent))
 
     v1 = data.loc["v1_strong_baseline_default"]
     v3 = data.loc["v3_csn_aug_default"]
@@ -255,9 +256,9 @@ def write_report_summary(
 
 
 def generate_report_assets(
-    input_csv: str | Path = "docs/bad_case_optimization.csv",
+    input_csv: str | Path = "docs/experiments/bad_case_optimization.csv",
     output_svg: str | Path = "docs/figures/model_comparison.svg",
-    output_md: str | Path = "docs/report_summary.md",
+    output_md: str | Path = "docs/reports/report_summary.md",
 ) -> tuple[Path, Path]:
     figure = generate_model_comparison_svg(input_csv=input_csv, output_svg=output_svg)
     summary = write_report_summary(input_csv=input_csv, figure_path=figure, output_md=output_md)

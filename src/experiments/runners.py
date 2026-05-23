@@ -11,9 +11,9 @@ import pandas as pd
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 
-from .adversarial import keyword_training_samples
-from .modeling import build_pipeline, evaluate_predictions, read_dataset, score_texts
-from .risk_features import spam_risk_scores
+from ..data.adversarial import keyword_training_samples
+from ..features.risk_features import spam_risk_scores
+from ..models.modeling import build_pipeline, evaluate_predictions, read_dataset, score_texts
 
 
 @dataclass(frozen=True)
@@ -415,8 +415,8 @@ def write_fusion_markdown(
 
 def compare_baselines(
     data_path: str | Path,
-    output_csv: str | Path = "docs/baseline_comparison.csv",
-    output_md: str | Path = "docs/baseline_comparison.md",
+    output_csv: str | Path = "docs/experiments/baseline_comparison.csv",
+    output_md: str | Path = "docs/experiments/baseline_comparison.md",
     test_size: float = 0.3,
     random_state: int = 42,
 ) -> pd.DataFrame:
@@ -466,8 +466,8 @@ def compare_baselines(
 def compare_csn_optimization(
     data_path: str | Path,
     adversarial_path: str | Path,
-    output_csv: str | Path = "docs/csn_comparison.csv",
-    output_md: str | Path = "docs/csn_comparison.md",
+    output_csv: str | Path = "docs/experiments/csn_comparison.csv",
+    output_md: str | Path = "docs/experiments/csn_comparison.md",
     test_size: float = 0.3,
     random_state: int = 42,
 ) -> pd.DataFrame:
@@ -552,9 +552,9 @@ def compare_csn_optimization(
 def compare_bad_case_optimization(
     data_path: str | Path,
     adversarial_path: str | Path,
-    output_csv: str | Path = "docs/bad_case_optimization.csv",
-    output_md: str | Path = "docs/bad_case_optimization.md",
-    grid_csv: str | Path = "docs/bad_case_tuning_grid.csv",
+    output_csv: str | Path = "docs/experiments/bad_case_optimization.csv",
+    output_md: str | Path = "docs/experiments/bad_case_optimization.md",
+    grid_csv: str | Path = "docs/experiments/bad_case_tuning_grid.csv",
     test_size: float = 0.3,
     validation_size: float = 0.2,
     random_state: int = 42,
@@ -678,9 +678,9 @@ def compare_bad_case_optimization(
 def compare_score_fusion_optimization(
     data_path: str | Path,
     adversarial_path: str | Path,
-    output_csv: str | Path = "docs/fusion_experiment.csv",
-    output_md: str | Path = "docs/fusion_experiment.md",
-    stability_csv: str | Path = "docs/fusion_stability.csv",
+    output_csv: str | Path = "docs/experiments/fusion_experiment.csv",
+    output_md: str | Path = "docs/experiments/fusion_experiment.md",
+    stability_csv: str | Path = "docs/experiments/fusion_stability.csv",
     test_size: float = 0.3,
     validation_size: float = 0.2,
     random_state: int = 42,

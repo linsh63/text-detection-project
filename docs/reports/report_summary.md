@@ -4,7 +4,7 @@
 
 本项目先建立 `字符级 TF-IDF + Linear SVM` 强 baseline，再引入字符相似性网络（CSN）处理字形、字音变体，最后根据 bad case 分析加入风险分数和阈值调优。
 
-![模型优化对比图](figures/model_comparison.svg)
+![模型优化对比图](../figures/model_comparison.svg)
 
 ## 核心结论
 

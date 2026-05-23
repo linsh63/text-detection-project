@@ -5,16 +5,16 @@ from __future__ import annotations
 import argparse
 import json
 
-from .adversarial import generate_adversarial_dataset, generate_keyword_challenge_dataset
-from .data import dataset_summary, prepare_ast_dataset, prepare_labeled_dataset
-from .experiments import (
+from .data.adversarial import generate_adversarial_dataset, generate_keyword_challenge_dataset
+from .data.datasets import dataset_summary, prepare_ast_dataset, prepare_labeled_dataset
+from .experiments.runners import (
     compare_bad_case_optimization,
     compare_baselines,
     compare_csn_optimization,
     compare_score_fusion_optimization,
 )
-from .modeling import evaluate_model, predict_text, train_baseline
-from .visualization import generate_report_assets
+from .models.modeling import evaluate_model, predict_text, train_baseline
+from .reporting.visualization import generate_report_assets
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -63,16 +63,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     compare_parser = subparsers.add_parser("compare-baselines", help="Run baseline comparison")
     compare_parser.add_argument("--data", required=True)
-    compare_parser.add_argument("--out-csv", default="docs/baseline_comparison.csv")
-    compare_parser.add_argument("--out-md", default="docs/baseline_comparison.md")
+    compare_parser.add_argument("--out-csv", default="docs/experiments/baseline_comparison.csv")
+    compare_parser.add_argument("--out-md", default="docs/experiments/baseline_comparison.md")
     compare_parser.add_argument("--test-size", type=float, default=0.3)
     compare_parser.add_argument("--random-state", type=int, default=42)
 
     csn_parser = subparsers.add_parser("compare-csn", help="Compare CSN optimization")
     csn_parser.add_argument("--data", required=True)
     csn_parser.add_argument("--adversarial", required=True)
-    csn_parser.add_argument("--out-csv", default="docs/csn_comparison.csv")
-    csn_parser.add_argument("--out-md", default="docs/csn_comparison.md")
+    csn_parser.add_argument("--out-csv", default="docs/experiments/csn_comparison.csv")
+    csn_parser.add_argument("--out-md", default="docs/experiments/csn_comparison.md")
     csn_parser.add_argument("--test-size", type=float, default=0.3)
     csn_parser.add_argument("--random-state", type=int, default=42)
 
@@ -82,9 +82,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     bad_case_parser.add_argument("--data", required=True)
     bad_case_parser.add_argument("--adversarial", required=True)
-    bad_case_parser.add_argument("--out-csv", default="docs/bad_case_optimization.csv")
-    bad_case_parser.add_argument("--out-md", default="docs/bad_case_optimization.md")
-    bad_case_parser.add_argument("--grid-csv", default="docs/bad_case_tuning_grid.csv")
+    bad_case_parser.add_argument("--out-csv", default="docs/experiments/bad_case_optimization.csv")
+    bad_case_parser.add_argument("--out-md", default="docs/experiments/bad_case_optimization.md")
+    bad_case_parser.add_argument("--grid-csv", default="docs/experiments/bad_case_tuning_grid.csv")
     bad_case_parser.add_argument("--test-size", type=float, default=0.3)
     bad_case_parser.add_argument("--validation-size", type=float, default=0.2)
     bad_case_parser.add_argument("--random-state", type=int, default=42)
@@ -93,9 +93,9 @@ def build_parser() -> argparse.ArgumentParser:
         "plot-comparison",
         help="Generate report-ready model comparison figure and summary",
     )
-    plot_parser.add_argument("--input", default="docs/bad_case_optimization.csv")
+    plot_parser.add_argument("--input", default="docs/experiments/bad_case_optimization.csv")
     plot_parser.add_argument("--out-svg", default="docs/figures/model_comparison.svg")
-    plot_parser.add_argument("--out-md", default="docs/report_summary.md")
+    plot_parser.add_argument("--out-md", default="docs/reports/report_summary.md")
 
     fusion_parser = subparsers.add_parser(
         "compare-fusions",
@@ -103,9 +103,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     fusion_parser.add_argument("--data", required=True)
     fusion_parser.add_argument("--adversarial", required=True)
-    fusion_parser.add_argument("--out-csv", default="docs/fusion_experiment.csv")
-    fusion_parser.add_argument("--out-md", default="docs/fusion_experiment.md")
-    fusion_parser.add_argument("--stability-csv", default="docs/fusion_stability.csv")
+    fusion_parser.add_argument("--out-csv", default="docs/experiments/fusion_experiment.csv")
+    fusion_parser.add_argument("--out-md", default="docs/experiments/fusion_experiment.md")
+    fusion_parser.add_argument("--stability-csv", default="docs/experiments/fusion_stability.csv")
     fusion_parser.add_argument("--test-size", type=float, default=0.3)
     fusion_parser.add_argument("--validation-size", type=float, default=0.2)
     fusion_parser.add_argument("--random-state", type=int, default=42)

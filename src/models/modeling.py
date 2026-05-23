@@ -25,8 +25,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 
-from .char_similarity import normalize_text_variants
-from .preprocess import char_tokenize, join_tokens, word_tokenize
+from ..features.char_similarity import normalize_text_variants
+from ..features.preprocess import char_tokenize, join_tokens, word_tokenize
 
 
 @dataclass(frozen=True)

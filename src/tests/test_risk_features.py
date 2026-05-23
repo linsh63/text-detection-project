@@ -1,4 +1,4 @@
-from src.risk_features import spam_risk_score
+from src.features.risk_features import spam_risk_score
 
 
 def test_spam_risk_score_detects_gambling_terms():

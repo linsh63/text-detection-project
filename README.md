@@ -15,9 +15,19 @@ text-detection-project/
 ├── data/
 │   ├── raw/                 # 原始数据，默认不提交大数据文件
 │   └── processed/           # 预处理后的数据
-├── docs/                    # baseline、优化过程和实验记录
+├── docs/
+│   ├── experiments/         # 实验结果、优化记录和对比表
+│   ├── figures/             # 报告图表
+│   ├── references/          # 课程要求、数据来源和指标设计
+│   └── reports/             # 可直接写进报告的摘要材料
 ├── models/                  # 训练后的模型
-└── src/                     # 项目源码、命令行入口和测试
+└── src/
+    ├── data/                # 数据读取和对抗样本生成
+    ├── experiments/         # 实验 runner 和结果写出
+    ├── features/            # 预处理、字符相似性和风险特征
+    ├── models/              # 模型训练、评估和预测
+    ├── reporting/           # 图表和报告摘要生成
+    └── tests/               # 轻量测试
 ```
 
 ## 快速开始
@@ -71,6 +81,6 @@ label	text
 
 ## 报告材料
 
-- 实验摘要：`docs/report_summary.md`
+- 实验摘要：`docs/reports/report_summary.md`
 - 对比图：`docs/figures/model_comparison.svg`
-- 逐步优化记录：`docs/optimization_log.md`
+- 逐步优化记录：`docs/experiments/optimization_log.md`
