@@ -28,6 +28,8 @@
 | Clean-vs-Adversarial Gap | 普通测试集与对抗测试集上的性能差距，展示鲁棒性 |
 | Variant Hit Cases | 模型成功识别的典型变体案例，适合报告截图和表格 |
 | Threshold Curve | 展示字符相似度阈值变化对 Precision/Recall/F1 的影响 |
+| Bad-case FP/FN Count | 直接展示误杀和漏检数量，方便解释优化代价 |
+| Risk-score Ablation | 对比只调阈值和加入 bad-case 风险分数后的差异 |
 
 ## 当前采用口径
 
@@ -55,6 +57,8 @@ baseline 先输出以下指标：
 - Variant Hit Cases
 - Clean Spam F1 drop
 - Keyword Challenge false negatives
+- Bad-case risk bonus
+- Tuned decision threshold
 
 ## 当前可运行命令
 
@@ -72,4 +76,6 @@ baseline 先输出以下指标：
 ./.venv/bin/python -m src.cli evaluate --data data/processed/adversarial_eval.tsv
 ./.venv/bin/python -m src.cli generate-keyword-challenge --out data/processed/keyword_challenge.tsv
 ./.venv/bin/python -m src.cli compare-csn --data data/processed/spam_message_20k.tsv --adversarial data/processed/keyword_challenge.tsv
+./.venv/bin/python -m src.cli compare-badcases --data data/processed/spam_message_20k.tsv --adversarial data/processed/keyword_challenge.tsv
+./.venv/bin/python -m src.cli plot-comparison
 ```

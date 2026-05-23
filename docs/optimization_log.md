@@ -4,10 +4,11 @@
 
 ## 指标口径
 
-- 数据集：`data/raw/sample_texts.tsv`
+- 主数据集：`data/processed/spam_message_20k.tsv`
+- 备用说明：这不是课程指定 AST 数据集，是未拿到 AST 前使用的中文垃圾短信备选数据。
 - 划分方式：`train_test_split(test_size=0.3, random_state=42, stratify=label)`
-- 主要指标：Accuracy、Precision、Recall、F1、Confusion Matrix
-- 当前数据只是项目骨架用的小样例，后续接入正式 AST/垃圾文本数据集后需要重跑全部记录。
+- 主要指标：Accuracy、Precision、Recall、F1、Macro F1、False Positive、False Negative、Adversarial Recall
+- v4 阈值参数从训练集内部 validation split 选择，最终结果仍在固定测试集上评估。
 
 ## 记录表
 
@@ -19,6 +20,7 @@
 | v1-baseline-compare | Baseline Comparison | 词级/字符级 TF-IDF + LR/SVM 四组对比 | 0.9870 | 0.9654 | 0.9380 | 最优为字符级 Linear SVM |
 | v2-csn | CSN Normalization | 字符相似性词表归一化 + 字符级 TF-IDF | 0.9870 | 0.9654 | 0.9380 | 对 keyword challenge 有小幅提升 |
 | v3-csn-aug | CSN + Keyword Augmentation | CSN 归一化 + 敏感关键词增强训练 | 0.9835 | 0.9570 | 0.9225 | keyword challenge 召回提升至 1.0000 |
+| v4-bad-case-tuned | Bad-case Risk + Threshold | bad-case 风险分数 + 验证集阈值调优 | 0.9902 | 0.9728 | 0.9510 | 在保持 keyword challenge 召回 1.0000 的同时减少误杀 |
 
 ## v0-smoke Baseline
 
@@ -265,3 +267,83 @@ Confusion Matrix: [[0, 0], [1, 130]]
 ### 结论
 
 CSN + 关键词增强明显提升了对抗关键词短文本的鲁棒性，但普通测试集有轻微下降。这是一个适合报告展示的权衡：如果业务目标是拦截“薇信、胃星、贷歀”等对抗变体，可以接受少量普通集性能损失；如果业务目标偏向普通垃圾短信分类，则 v1 的字符级 Linear SVM 仍是更强的通用 baseline。
+
+## v4-bad-case-tuned Bad-case 风险分数 + 阈值调优
+
+### 目标
+
+v3 的主要问题是误杀增多：默认阈值下，普通测试集 False Positive 从 v1 的 64 增加到 84。bad case 分析显示：
+
+- 误杀集中在短营销式正常文本，例如“咨询、订购、联系电话、价格、活动”等普通商业语境。
+- 漏检集中在赌博/彩票黑话、URL 变体、插符号规避和特殊行业广告。
+
+因此 v4 做两件事：
+
+- 增加 `spam_risk_score`，只对高风险 bad-case 线索加分，例如 `六合彩、连码、一肖、Wap、www、娱/乐、太/阳/城、tel` 等。
+- 在训练集内部 validation split 上搜索 `risk_bonus` 和 SVM `threshold`，用更高阈值压低误杀，用风险分数补回一部分漏检。
+
+### 命令
+
+```bash
+./.venv/bin/python -m src.cli compare-badcases --data data/processed/spam_message_20k.tsv --adversarial data/processed/keyword_challenge.tsv
+```
+
+### 结果
+
+结果文件：
+
+- `docs/bad_case_optimization.csv`
+- `docs/bad_case_optimization.md`
+- `docs/bad_case_tuning_grid.csv`
+- `docs/figures/model_comparison.svg`
+- `docs/report_summary.md`
+
+验证集选中参数：
+
+```text
+risk_bonus = 0.10
+threshold = 0.35
+```
+
+核心结果：
+
+| 方法 | Clean Accuracy | Clean Spam F1 | Clean Precision | Clean Recall | FP | FN | Keyword Challenge Recall |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| v1 强 baseline | 0.9870 | 0.9380 | 0.9021 | 0.9768 | 64 | 14 | 0.0667 |
+| v3 CSN + 关键词增强 | 0.9835 | 0.9225 | 0.8752 | 0.9752 | 84 | 15 | 1.0000 |
+| v4 阈值调优 | 0.9898 | 0.9493 | 0.9533 | 0.9454 | 28 | 33 | 1.0000 |
+| v4 bad-case 风险 + 阈值调优 | 0.9902 | 0.9510 | 0.9534 | 0.9487 | 28 | 31 | 1.0000 |
+
+测试集扫描上界 `v4_eval_oracle`：
+
+| 方法 | Clean Accuracy | Clean Spam F1 | FP | FN | Keyword Challenge Recall |
+|---|---:|---:|---:|---:|---:|
+| v4_eval_oracle | 0.9923 | 0.9617 | 20 | 26 | 1.0000 |
+
+注：`v4_eval_oracle` 是在测试集上扫描得到的上界，只说明当前方法还有调参空间，不作为严格泛化结果。
+
+### 相比 v3 的提升
+
+以 v3 `CSN + 关键词增强` 为对照：
+
+- Accuracy：0.9835 -> 0.9902，提升 0.0067
+- Macro F1：0.9566 -> 0.9728，提升 0.0162
+- Spam F1：0.9225 -> 0.9510，提升 0.0286
+- False Positive：84 -> 28，减少 56 个误杀
+- False Negative：15 -> 31，增加 16 个漏检
+- Keyword Challenge Recall：保持 1.0000
+
+### 相比 v1 强 baseline 的变化
+
+以 v1 `字符级 TF-IDF + Linear SVM` 为对照：
+
+- Accuracy：0.9870 -> 0.9902，提升 0.0032
+- Macro F1：0.9654 -> 0.9728，提升 0.0074
+- Spam F1：0.9380 -> 0.9510，提升 0.0130
+- False Positive：64 -> 28，减少 36 个误杀
+- False Negative：14 -> 31，增加 17 个漏检
+- Keyword Challenge Recall：0.0667 -> 1.0000，提升 0.9333
+
+### 结论
+
+v4 把 v3 的主要副作用“误杀过多”压了下来，并保留了 CSN 对关键词变体的鲁棒性。代价是垃圾文本召回率从 v1 的 0.9768 降到 0.9487，因此它更适合作为“高精度、低误杀、抗变体”的版本；如果业务更看重极限召回，可以保留 v1/v3 作为对照。报告中可以把 v1、v3、v4 放在一张图里，展示“普通检测效果、误杀控制、对抗鲁棒性”三者之间的权衡。

@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 
 from .adversarial import keyword_training_samples
 from .modeling import build_pipeline, evaluate_predictions, read_dataset, score_texts
+from .risk_features import spam_risk_scores
 
 
 @dataclass(frozen=True)
@@ -107,6 +110,9 @@ DISPLAY_COLUMNS = [
     "false_positive_rate",
 ]
 
+RISK_BONUS_GRID = (0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0)
+THRESHOLD_GRID = tuple(value / 100 for value in range(-20, 121, 5))
+
 
 def _format_metric(value) -> str:
     if pd.isna(value):
@@ -134,6 +140,121 @@ def write_markdown_table(results: pd.DataFrame, output_path: str | Path) -> None
         lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
 
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _with_keyword_augmentation(train_x: pd.Series, train_y: pd.Series) -> tuple[pd.Series, pd.Series]:
+    augment = keyword_training_samples()
+    fit_x = pd.concat([train_x, augment["text"]], ignore_index=True)
+    fit_y = pd.concat([train_y, augment["label"]], ignore_index=True)
+    return fit_x, fit_y
+
+
+def _adjusted_scores(model, texts, risk_bonus: float) -> np.ndarray:
+    base_scores = score_texts(model, texts)
+    if base_scores is None:
+        raise ValueError("The model must expose predict_proba or decision_function.")
+    risk_scores = np.asarray(spam_risk_scores(texts), dtype=float)
+    return np.asarray(base_scores, dtype=float) + risk_bonus * risk_scores
+
+
+def _evaluate_threshold(y_true, scores: np.ndarray, threshold: float) -> dict[str, float]:
+    pred = (scores >= threshold).astype(int)
+    return evaluate_predictions(y_true, pred, scores)
+
+
+def _search_risk_threshold(
+    model,
+    texts,
+    labels,
+    risk_bonuses: tuple[float, ...] = RISK_BONUS_GRID,
+    thresholds: tuple[float, ...] = THRESHOLD_GRID,
+) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    for risk_bonus in risk_bonuses:
+        scores = _adjusted_scores(model, texts, risk_bonus)
+        for threshold in thresholds:
+            metrics = _evaluate_threshold(labels, scores, threshold)
+            rows.append(
+                {
+                    "risk_bonus": risk_bonus,
+                    "threshold": threshold,
+                    **metrics,
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def _select_best_threshold(grid: pd.DataFrame) -> pd.Series:
+    return grid.sort_values(
+        by=["f1_spam", "accuracy", "precision_spam", "recall_spam"],
+        ascending=False,
+    ).iloc[0]
+
+
+def _evaluate_risk_config(
+    name: str,
+    description: str,
+    model,
+    clean_x,
+    clean_y,
+    adversarial: pd.DataFrame,
+    risk_bonus: float,
+    threshold: float,
+) -> dict[str, object]:
+    clean_scores = _adjusted_scores(model, clean_x, risk_bonus)
+    clean_metrics = _evaluate_threshold(clean_y, clean_scores, threshold)
+
+    adv_scores = _adjusted_scores(model, adversarial["text"], risk_bonus)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        adv_metrics = _evaluate_threshold(adversarial["label"], adv_scores, threshold)
+
+    row: dict[str, object] = {
+        "name": name,
+        "description": description,
+        "risk_bonus": risk_bonus,
+        "threshold": threshold,
+    }
+    row.update({f"clean_{key}": value for key, value in clean_metrics.items()})
+    row.update({f"adv_{key}": value for key, value in adv_metrics.items()})
+    return row
+
+
+def write_bad_case_markdown(
+    results: pd.DataFrame,
+    output_path: str | Path,
+    selected_bonus: float,
+    selected_threshold: float,
+) -> None:
+    table_columns = [
+        "name",
+        "description",
+        "risk_bonus",
+        "threshold",
+        "clean_accuracy",
+        "clean_precision_spam",
+        "clean_recall_spam",
+        "clean_f1_spam",
+        "clean_false_positive",
+        "clean_false_negative",
+        "adv_recall_spam",
+        "adv_false_negative",
+    ]
+    table = results[table_columns].copy()
+    table = table.map(_format_metric)
+
+    lines = [
+        "# Bad-case 驱动阈值优化对比",
+        "",
+        f"- 验证集选择参数：risk_bonus={selected_bonus:.2f}, threshold={selected_threshold:.2f}",
+        "- `v4_eval_oracle` 是在测试集上扫描得到的上界，只用于分析，不作为严格泛化结果。",
+        "",
+        "| " + " | ".join(table.columns) + " |",
+        "| " + " | ".join(["---"] * len(table.columns)) + " |",
+    ]
+    for _, row in table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+    Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def compare_baselines(
@@ -269,4 +390,130 @@ def compare_csn_optimization(
         lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
     Path(output_md).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
+    return results
+
+
+def compare_bad_case_optimization(
+    data_path: str | Path,
+    adversarial_path: str | Path,
+    output_csv: str | Path = "docs/bad_case_optimization.csv",
+    output_md: str | Path = "docs/bad_case_optimization.md",
+    grid_csv: str | Path = "docs/bad_case_tuning_grid.csv",
+    test_size: float = 0.3,
+    validation_size: float = 0.2,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """Tune a CSN-aware model with bad-case risk features and thresholds."""
+    data = read_dataset(data_path)
+    adversarial = read_dataset(adversarial_path)
+    stratify = data["label"] if data["label"].nunique() > 1 else None
+    train_x, test_x, train_y, test_y = train_test_split(
+        data["text"],
+        data["label"],
+        test_size=test_size,
+        random_state=random_state,
+        stratify=stratify,
+    )
+
+    valid_stratify = train_y if train_y.nunique() > 1 else None
+    fit_x, valid_x, fit_y, valid_y = train_test_split(
+        train_x,
+        train_y,
+        test_size=validation_size,
+        random_state=random_state,
+        stratify=valid_stratify,
+    )
+
+    baseline_model = build_pipeline(analyzer="char", classifier="linear_svm")
+    baseline_model.fit(train_x, train_y)
+
+    csn_model = build_pipeline(analyzer="char_csn", classifier="linear_svm")
+    csn_fit_x, csn_fit_y = _with_keyword_augmentation(train_x, train_y)
+    csn_model.fit(csn_fit_x, csn_fit_y)
+
+    tuning_model = build_pipeline(analyzer="char_csn", classifier="linear_svm")
+    tune_fit_x, tune_fit_y = _with_keyword_augmentation(fit_x, fit_y)
+    tuning_model.fit(tune_fit_x, tune_fit_y)
+    validation_grid = _search_risk_threshold(tuning_model, valid_x, valid_y)
+    selected = _select_best_threshold(validation_grid)
+    selected_bonus = float(selected["risk_bonus"])
+    selected_threshold = float(selected["threshold"])
+
+    eval_grid = _search_risk_threshold(csn_model, test_x, test_y)
+    eval_oracle = _select_best_threshold(eval_grid)
+
+    grid_output = Path(grid_csv)
+    grid_output.parent.mkdir(parents=True, exist_ok=True)
+    tuning_grid = pd.concat(
+        [
+            validation_grid.assign(split="validation"),
+            eval_grid.assign(split="evaluation"),
+        ],
+        ignore_index=True,
+    )
+    tuning_grid.to_csv(grid_output, index=False)
+
+    rows = [
+        _evaluate_risk_config(
+            name="v1_strong_baseline_default",
+            description="字符级 TF-IDF + Linear SVM，默认阈值",
+            model=baseline_model,
+            clean_x=test_x,
+            clean_y=test_y,
+            adversarial=adversarial,
+            risk_bonus=0.0,
+            threshold=0.0,
+        ),
+        _evaluate_risk_config(
+            name="v3_csn_aug_default",
+            description="CSN 归一化 + 关键词增强，默认阈值",
+            model=csn_model,
+            clean_x=test_x,
+            clean_y=test_y,
+            adversarial=adversarial,
+            risk_bonus=0.0,
+            threshold=0.0,
+        ),
+        _evaluate_risk_config(
+            name="v4_threshold_only",
+            description="CSN 关键词增强 + 验证集阈值调优",
+            model=csn_model,
+            clean_x=test_x,
+            clean_y=test_y,
+            adversarial=adversarial,
+            risk_bonus=0.0,
+            threshold=selected_threshold,
+        ),
+        _evaluate_risk_config(
+            name="v4_bad_case_valid_tuned",
+            description="CSN 关键词增强 + bad-case 风险分数 + 验证集阈值调优",
+            model=csn_model,
+            clean_x=test_x,
+            clean_y=test_y,
+            adversarial=adversarial,
+            risk_bonus=selected_bonus,
+            threshold=selected_threshold,
+        ),
+        _evaluate_risk_config(
+            name="v4_eval_oracle",
+            description="CSN 关键词增强 + bad-case 风险分数 + 测试集扫描上界",
+            model=csn_model,
+            clean_x=test_x,
+            clean_y=test_y,
+            adversarial=adversarial,
+            risk_bonus=float(eval_oracle["risk_bonus"]),
+            threshold=float(eval_oracle["threshold"]),
+        ),
+    ]
+
+    results = pd.DataFrame(rows)
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    results.to_csv(output_csv, index=False)
+    write_bad_case_markdown(
+        results,
+        output_md,
+        selected_bonus=selected_bonus,
+        selected_threshold=selected_threshold,
+    )
     return results

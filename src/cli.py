@@ -7,8 +7,13 @@ import json
 
 from .adversarial import generate_adversarial_dataset, generate_keyword_challenge_dataset
 from .data import dataset_summary, prepare_ast_dataset, prepare_labeled_dataset
-from .experiments import compare_baselines, compare_csn_optimization
+from .experiments import (
+    compare_bad_case_optimization,
+    compare_baselines,
+    compare_csn_optimization,
+)
 from .modeling import evaluate_model, predict_text, train_baseline
+from .visualization import generate_report_assets
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -69,6 +74,27 @@ def build_parser() -> argparse.ArgumentParser:
     csn_parser.add_argument("--out-md", default="docs/csn_comparison.md")
     csn_parser.add_argument("--test-size", type=float, default=0.3)
     csn_parser.add_argument("--random-state", type=int, default=42)
+
+    bad_case_parser = subparsers.add_parser(
+        "compare-badcases",
+        help="Run bad-case driven risk-score and threshold tuning",
+    )
+    bad_case_parser.add_argument("--data", required=True)
+    bad_case_parser.add_argument("--adversarial", required=True)
+    bad_case_parser.add_argument("--out-csv", default="docs/bad_case_optimization.csv")
+    bad_case_parser.add_argument("--out-md", default="docs/bad_case_optimization.md")
+    bad_case_parser.add_argument("--grid-csv", default="docs/bad_case_tuning_grid.csv")
+    bad_case_parser.add_argument("--test-size", type=float, default=0.3)
+    bad_case_parser.add_argument("--validation-size", type=float, default=0.2)
+    bad_case_parser.add_argument("--random-state", type=int, default=42)
+
+    plot_parser = subparsers.add_parser(
+        "plot-comparison",
+        help="Generate report-ready model comparison figure and summary",
+    )
+    plot_parser.add_argument("--input", default="docs/bad_case_optimization.csv")
+    plot_parser.add_argument("--out-svg", default="docs/figures/model_comparison.svg")
+    plot_parser.add_argument("--out-md", default="docs/report_summary.md")
 
     return parser
 
@@ -200,6 +226,46 @@ def main() -> None:
                 ]
             ].to_string(index=False)
         )
+        return
+
+    if args.command == "compare-badcases":
+        results = compare_bad_case_optimization(
+            data_path=args.data,
+            adversarial_path=args.adversarial,
+            output_csv=args.out_csv,
+            output_md=args.out_md,
+            grid_csv=args.grid_csv,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            random_state=args.random_state,
+        )
+        print(f"Saved CSV to: {args.out_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(f"Saved tuning grid to: {args.grid_csv}")
+        print(
+            results[
+                [
+                    "name",
+                    "risk_bonus",
+                    "threshold",
+                    "clean_accuracy",
+                    "clean_f1_spam",
+                    "clean_false_positive",
+                    "clean_false_negative",
+                    "adv_recall_spam",
+                ]
+            ].to_string(index=False)
+        )
+        return
+
+    if args.command == "plot-comparison":
+        figure, summary = generate_report_assets(
+            input_csv=args.input,
+            output_svg=args.out_svg,
+            output_md=args.out_md,
+        )
+        print(f"Saved figure to: {figure}")
+        print(f"Saved summary to: {summary}")
         return
 
     raise ValueError(f"Unsupported command: {args.command}")

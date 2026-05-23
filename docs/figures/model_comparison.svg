@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="760" viewBox="0 0 1100 760" role="img" aria-label="模型优化对比图">
+<rect width="1100" height="760" fill="#F6F8FB"/>
+<text x="48.0" y="58.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="28" font-weight="800" fill="#172033" text-anchor="start">文本检测模型优化对比</text>
+<text x="48.0" y="86.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="15" font-weight="400" fill="#526071" text-anchor="start">v4 在保持对抗召回 1.000 的同时，显著降低误杀并提升 Spam F1</text>
+<rect x="760.0" y="42.0" width="16" height="16" rx="3" fill="#2F6FED"/>
+<text x="784.0" y="55.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="400" fill="#3F4A5F" text-anchor="start">v1 强 baseline</text>
+<rect x="760.0" y="68.0" width="16" height="16" rx="3" fill="#E05D44"/>
+<text x="784.0" y="81.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="400" fill="#3F4A5F" text-anchor="start">v3 CSN增强</text>
+<rect x="760.0" y="94.0" width="16" height="16" rx="3" fill="#2E9D68"/>
+<text x="784.0" y="107.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="400" fill="#3F4A5F" text-anchor="start">v4 bad-case调优</text>
+<rect x="48.0" y="118.0" width="468.0" height="264.0" rx="6" fill="#FFFFFF" stroke="#D9DEE8"/>
+<text x="68.0" y="152.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="700" fill="#253044" text-anchor="start">Spam F1</text>
+<text x="496.0" y="152.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="400" fill="#6B7280" text-anchor="end">越高越好</text>
+<line x1="118.0" y1="324.0" x2="476.0" y2="324.0" stroke="#B8C0CC"/>
+<line x1="118.0" y1="180.0" x2="118.0" y2="324.0" stroke="#B8C0CC"/>
+<line x1="114.0" y1="324.0" x2="118.0" y2="324.0" stroke="#B8C0CC"/>
+<text x="108.0" y="328.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">0.0</text>
+<line x1="118.0" y1="324.0" x2="476.0" y2="324.0" stroke="#EEF1F5"/>
+<line x1="114.0" y1="252.0" x2="118.0" y2="252.0" stroke="#B8C0CC"/>
+<text x="108.0" y="256.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">0.5</text>
+<line x1="118.0" y1="252.0" x2="476.0" y2="252.0" stroke="#EEF1F5"/>
+<line x1="114.0" y1="180.0" x2="118.0" y2="180.0" stroke="#B8C0CC"/>
+<text x="108.0" y="184.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">1.0</text>
+<line x1="118.0" y1="180.0" x2="476.0" y2="180.0" stroke="#EEF1F5"/>
+<rect x="164.0" y="188.9" width="58.0" height="135.1" rx="4" fill="#2F6FED"/>
+<text x="193.0" y="192.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">0.938</text>
+<text x="193.0" y="348.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v1</text>
+<rect x="268.0" y="191.2" width="58.0" height="132.8" rx="4" fill="#E05D44"/>
+<text x="297.0" y="192.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">0.922</text>
+<text x="297.0" y="348.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v3</text>
+<rect x="372.0" y="187.1" width="58.0" height="136.9" rx="4" fill="#2E9D68"/>
+<text x="401.0" y="192.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">0.951</text>
+<text x="401.0" y="348.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v4</text>
+<rect x="584.0" y="118.0" width="468.0" height="264.0" rx="6" fill="#FFFFFF" stroke="#D9DEE8"/>
+<text x="604.0" y="152.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="700" fill="#253044" text-anchor="start">误杀 FP</text>
+<text x="1032.0" y="152.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="400" fill="#6B7280" text-anchor="end">越低越好</text>
+<line x1="654.0" y1="324.0" x2="1012.0" y2="324.0" stroke="#B8C0CC"/>
+<line x1="654.0" y1="180.0" x2="654.0" y2="324.0" stroke="#B8C0CC"/>
+<line x1="650.0" y1="324.0" x2="654.0" y2="324.0" stroke="#B8C0CC"/>
+<text x="644.0" y="328.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">0</text>
+<line x1="654.0" y1="324.0" x2="1012.0" y2="324.0" stroke="#EEF1F5"/>
+<line x1="650.0" y1="252.0" x2="654.0" y2="252.0" stroke="#B8C0CC"/>
+<text x="644.0" y="256.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">50</text>
+<line x1="654.0" y1="252.0" x2="1012.0" y2="252.0" stroke="#EEF1F5"/>
+<line x1="650.0" y1="180.0" x2="654.0" y2="180.0" stroke="#B8C0CC"/>
+<text x="644.0" y="184.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">100</text>
+<line x1="654.0" y1="180.0" x2="1012.0" y2="180.0" stroke="#EEF1F5"/>
+<rect x="700.0" y="231.8" width="58.0" height="92.2" rx="4" fill="#2F6FED"/>
+<text x="729.0" y="223.8" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">64</text>
+<text x="729.0" y="348.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v1</text>
+<rect x="804.0" y="203.0" width="58.0" height="121.0" rx="4" fill="#E05D44"/>
+<text x="833.0" y="195.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">84</text>
+<text x="833.0" y="348.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v3</text>
+<rect x="908.0" y="283.7" width="58.0" height="40.3" rx="4" fill="#2E9D68"/>
+<text x="937.0" y="275.7" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">28</text>
+<text x="937.0" y="348.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v4</text>
+<rect x="48.0" y="430.0" width="468.0" height="264.0" rx="6" fill="#FFFFFF" stroke="#D9DEE8"/>
+<text x="68.0" y="464.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="700" fill="#253044" text-anchor="start">漏检 FN</text>
+<text x="496.0" y="464.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="400" fill="#6B7280" text-anchor="end">越低越好</text>
+<line x1="118.0" y1="636.0" x2="476.0" y2="636.0" stroke="#B8C0CC"/>
+<line x1="118.0" y1="492.0" x2="118.0" y2="636.0" stroke="#B8C0CC"/>
+<line x1="114.0" y1="636.0" x2="118.0" y2="636.0" stroke="#B8C0CC"/>
+<text x="108.0" y="640.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">0</text>
+<line x1="118.0" y1="636.0" x2="476.0" y2="636.0" stroke="#EEF1F5"/>
+<line x1="114.0" y1="564.0" x2="118.0" y2="564.0" stroke="#B8C0CC"/>
+<text x="108.0" y="568.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">20</text>
+<line x1="118.0" y1="564.0" x2="476.0" y2="564.0" stroke="#EEF1F5"/>
+<line x1="114.0" y1="492.0" x2="118.0" y2="492.0" stroke="#B8C0CC"/>
+<text x="108.0" y="496.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">40</text>
+<line x1="118.0" y1="492.0" x2="476.0" y2="492.0" stroke="#EEF1F5"/>
+<rect x="164.0" y="585.6" width="58.0" height="50.4" rx="4" fill="#2F6FED"/>
+<text x="193.0" y="577.6" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">14</text>
+<text x="193.0" y="660.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v1</text>
+<rect x="268.0" y="582.0" width="58.0" height="54.0" rx="4" fill="#E05D44"/>
+<text x="297.0" y="574.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">15</text>
+<text x="297.0" y="660.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v3</text>
+<rect x="372.0" y="524.4" width="58.0" height="111.6" rx="4" fill="#2E9D68"/>
+<text x="401.0" y="516.4" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">31</text>
+<text x="401.0" y="660.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v4</text>
+<rect x="584.0" y="430.0" width="468.0" height="264.0" rx="6" fill="#FFFFFF" stroke="#D9DEE8"/>
+<text x="604.0" y="464.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="700" fill="#253044" text-anchor="start">对抗召回</text>
+<text x="1032.0" y="464.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="400" fill="#6B7280" text-anchor="end">越高越好</text>
+<line x1="654.0" y1="636.0" x2="1012.0" y2="636.0" stroke="#B8C0CC"/>
+<line x1="654.0" y1="492.0" x2="654.0" y2="636.0" stroke="#B8C0CC"/>
+<line x1="650.0" y1="636.0" x2="654.0" y2="636.0" stroke="#B8C0CC"/>
+<text x="644.0" y="640.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">0.0</text>
+<line x1="654.0" y1="636.0" x2="1012.0" y2="636.0" stroke="#EEF1F5"/>
+<line x1="650.0" y1="564.0" x2="654.0" y2="564.0" stroke="#B8C0CC"/>
+<text x="644.0" y="568.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">0.5</text>
+<line x1="654.0" y1="564.0" x2="1012.0" y2="564.0" stroke="#EEF1F5"/>
+<line x1="650.0" y1="492.0" x2="654.0" y2="492.0" stroke="#B8C0CC"/>
+<text x="644.0" y="496.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6B7280" text-anchor="end">1.0</text>
+<line x1="654.0" y1="492.0" x2="1012.0" y2="492.0" stroke="#EEF1F5"/>
+<rect x="700.0" y="626.4" width="58.0" height="9.6" rx="4" fill="#2F6FED"/>
+<text x="729.0" y="618.4" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">0.067</text>
+<text x="729.0" y="660.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v1</text>
+<rect x="804.0" y="492.0" width="58.0" height="144.0" rx="4" fill="#E05D44"/>
+<text x="833.0" y="504.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">1.000</text>
+<text x="833.0" y="660.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v3</text>
+<rect x="908.0" y="492.0" width="58.0" height="144.0" rx="4" fill="#2E9D68"/>
+<text x="937.0" y="504.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#253044" text-anchor="middle">1.000</text>
+<text x="937.0" y="660.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#3F4A5F" text-anchor="middle">v4</text>
+<text x="48.0" y="724.0" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="400" fill="#6B7280" text-anchor="start">数据：spam_message_20k 固定测试集；对抗集：keyword_challenge。v4 参数来自训练集内部 validation split。</text>
+</svg>

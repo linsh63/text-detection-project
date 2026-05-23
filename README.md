@@ -36,6 +36,8 @@ source .venv/bin/activate
 ./.venv/bin/python -m src.cli compare-baselines --data data/processed/spam_message_20k.tsv
 ./.venv/bin/python -m src.cli generate-keyword-challenge --out data/processed/keyword_challenge.tsv
 ./.venv/bin/python -m src.cli compare-csn --data data/processed/spam_message_20k.tsv --adversarial data/processed/keyword_challenge.tsv
+./.venv/bin/python -m src.cli compare-badcases --data data/processed/spam_message_20k.tsv --adversarial data/processed/keyword_challenge.tsv
+./.venv/bin/python -m src.cli plot-comparison
 ./.venv/bin/python -m src.cli predict --text "加我薇信，轻松月入过万"
 ```
 
@@ -63,5 +65,12 @@ label	text
 - 基线模型：TF-IDF + Logistic Regression / Linear SVM
 - 对抗样本：将关键词替换为字形或字音相似变体
 - 字符相似性：融合拼音相似性、常见变体词表和字符混淆规则
+- Bad-case 优化：针对赌博黑话、URL 变体、插符号规避等漏检类型做风险分数融合和阈值调优
 - 评价指标：Accuracy、Precision、Recall、F1、混淆矩阵
 - 分析内容：阈值敏感性、模型对比、典型样例分析
+
+## 报告材料
+
+- 实验摘要：`docs/report_summary.md`
+- 对比图：`docs/figures/model_comparison.svg`
+- 逐步优化记录：`docs/optimization_log.md`
