@@ -11,6 +11,7 @@ from .data.datasets import (
     dataset_summary,
     prepare_ast_dataset,
     prepare_fbs_mixed_dataset,
+    prepare_huggingface_dataset,
     prepare_labeled_dataset,
 )
 from .experiments.runners import (
@@ -18,6 +19,7 @@ from .experiments.runners import (
     compare_bad_case_optimization,
     compare_baselines,
     compare_csn_optimization,
+    compare_domain_adaptation_validation,
     compare_multidataset_fusion_validation,
     compare_score_fusion_optimization,
 )
@@ -63,6 +65,18 @@ def build_parser() -> argparse.ArgumentParser:
     fbs_parser.add_argument("--spam-ratio", type=float, default=0.5)
     fbs_parser.add_argument("--exclude")
     fbs_parser.add_argument("--random-state", type=int, default=42)
+
+    hf_parser = subparsers.add_parser(
+        "prepare-hf",
+        help="Download a Hugging Face dataset and normalize it to label/text TSV",
+    )
+    hf_parser.add_argument("--dataset", required=True)
+    hf_parser.add_argument("--out", required=True)
+    hf_parser.add_argument(
+        "--no-token",
+        action="store_true",
+        help="Do not pass the local Hugging Face auth token to load_dataset",
+    )
 
     adversarial_parser = subparsers.add_parser(
         "generate-adversarial",
@@ -187,6 +201,40 @@ def build_parser() -> argparse.ArgumentParser:
     all_versions_parser.add_argument("--validation-size", type=float, default=0.2)
     all_versions_parser.add_argument("--random-state", type=int, default=42)
 
+    adaptation_parser = subparsers.add_parser(
+        "validate-domain-adaptation",
+        help="Compare main-only models with v6 trained on held-out external adaptation data",
+    )
+    adaptation_parser.add_argument("--train-data", required=True)
+    adaptation_parser.add_argument(
+        "--adapt-data",
+        action="append",
+        default=[],
+        help="External binary dataset in name=path form. Can be repeated.",
+    )
+    adaptation_parser.add_argument(
+        "--challenge-data",
+        action="append",
+        default=[],
+        help="Challenge-only eval dataset in name=path form. Can be repeated.",
+    )
+    adaptation_parser.add_argument(
+        "--out-csv",
+        default="docs/experiments/domain_adaptation_validation.csv",
+    )
+    adaptation_parser.add_argument(
+        "--out-md",
+        default="docs/experiments/domain_adaptation_validation.md",
+    )
+    adaptation_parser.add_argument(
+        "--split-csv",
+        default="docs/experiments/domain_adaptation_splits.csv",
+    )
+    adaptation_parser.add_argument("--test-size", type=float, default=0.3)
+    adaptation_parser.add_argument("--validation-size", type=float, default=0.2)
+    adaptation_parser.add_argument("--adapt-train-size", type=float, default=0.3)
+    adaptation_parser.add_argument("--random-state", type=int, default=42)
+
     return parser
 
 
@@ -242,6 +290,16 @@ def main() -> None:
             random_state=args.random_state,
         )
         print(f"Saved FBS mixed dataset to: {args.out}")
+        print(json.dumps(dataset_summary(data), ensure_ascii=False, indent=2, sort_keys=True))
+        return
+
+    if args.command == "prepare-hf":
+        data = prepare_huggingface_dataset(
+            args.dataset,
+            args.out,
+            token=None if args.no_token else True,
+        )
+        print(f"Saved Hugging Face dataset to: {args.out}")
         print(json.dumps(dataset_summary(data), ensure_ascii=False, indent=2, sort_keys=True))
         return
 
@@ -443,6 +501,38 @@ def main() -> None:
         )
         print(f"Saved CSV to: {args.out_csv}")
         print(f"Saved Markdown to: {args.out_md}")
+        print(
+            results[
+                [
+                    "dataset",
+                    "name",
+                    "accuracy",
+                    "precision_spam",
+                    "recall_spam",
+                    "f1_spam",
+                    "false_positive",
+                    "false_negative",
+                ]
+            ].to_string(index=False)
+        )
+        return
+
+    if args.command == "validate-domain-adaptation":
+        results = compare_domain_adaptation_validation(
+            train_data_path=args.train_data,
+            adapt_data_paths=_parse_named_paths(args.adapt_data),
+            challenge_data_paths=_parse_named_paths(args.challenge_data),
+            output_csv=args.out_csv,
+            output_md=args.out_md,
+            adaptation_summary_csv=args.split_csv,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            adapt_train_size=args.adapt_train_size,
+            random_state=args.random_state,
+        )
+        print(f"Saved CSV to: {args.out_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(f"Saved split summary to: {args.split_csv}")
         print(
             results[
                 [

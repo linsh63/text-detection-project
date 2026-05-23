@@ -309,6 +309,18 @@ def _search_max_fusion_threshold(
     return pd.DataFrame(rows)
 
 
+def _search_score_threshold(
+    scores: np.ndarray,
+    labels,
+    thresholds: tuple[float, ...] = FUSION_THRESHOLD_GRID,
+) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    for threshold in thresholds:
+        metrics = _evaluate_threshold(labels, scores, threshold)
+        rows.append({"risk_bonus": 0.0, "threshold": threshold, **metrics})
+    return pd.DataFrame(rows)
+
+
 def write_bad_case_markdown(
     results: pd.DataFrame,
     output_path: str | Path,
@@ -616,6 +628,97 @@ def write_all_versions_multidataset_markdown(
         "",
         "| " + " | ".join(best_table.columns) + " |",
         "| " + " | ".join(["---"] * len(best_table.columns)) + " |",
+        ]
+    )
+    for _, row in best_table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    lines.extend(
+        [
+            "",
+            "## 完整指标",
+            "",
+            "| " + " | ".join(table.columns) + " |",
+            "| " + " | ".join(["---"] * len(table.columns)) + " |",
+        ]
+    )
+    for _, row in table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_domain_adaptation_markdown(
+    results: pd.DataFrame,
+    adaptation_summary: pd.DataFrame,
+    output_path: str | Path,
+    selected_bonus: float,
+    selected_threshold: float,
+    bridge_threshold: float,
+) -> None:
+    table_columns = [
+        "dataset",
+        "name",
+        "n_samples",
+        "n_normal",
+        "n_spam",
+        "accuracy",
+        "precision_spam",
+        "recall_spam",
+        "f1_spam",
+        "false_positive",
+        "false_negative",
+    ]
+    table = results[table_columns].copy().map(_format_metric)
+
+    best_rows = (
+        results.sort_values(
+            by=["dataset", "f1_spam", "accuracy", "recall_spam"],
+            ascending=[True, False, False, False],
+        )
+        .groupby("dataset", sort=False)
+        .head(1)
+    )
+    best_table = best_rows[
+        [
+            "dataset",
+            "name",
+            "accuracy",
+            "precision_spam",
+            "recall_spam",
+            "f1_spam",
+            "false_positive",
+            "false_negative",
+        ]
+    ].copy().map(_format_metric)
+    adaptation_table = adaptation_summary.copy().map(_format_metric)
+
+    lines = [
+        "# v6/v7 跨来源适配实验",
+        "",
+        "本实验从外部二分类数据集中切出一部分作为适配训练数据，剩余部分作为外部保留测试集，用于验证是否能提升跨来源泛化。",
+        "",
+        f"- v6 融合参数：risk_bonus={selected_bonus:.2f}, threshold={selected_threshold:.2f}",
+        f"- v7 桥接阈值：threshold={bridge_threshold:.2f}",
+        "- v6 训练数据：主训练集 + FBS/HF 外部适配训练集 + 关键词增强样本。",
+        "- v7 桥接策略：`max(v5_main_only_score, v6_multisource_score)`，用于兼顾主数据集和外部数据集。",
+        "- 外部 holdout 没有进入训练或阈值选择。",
+        "",
+        "## 外部数据切分",
+        "",
+        "| " + " | ".join(adaptation_table.columns) + " |",
+        "| " + " | ".join(["---"] * len(adaptation_table.columns)) + " |",
+    ]
+    for _, row in adaptation_table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    lines.extend(
+        [
+            "",
+            "## 每个数据集最优结果",
+            "",
+            "| " + " | ".join(best_table.columns) + " |",
+            "| " + " | ".join(["---"] * len(best_table.columns)) + " |",
         ]
     )
     for _, row in best_table.iterrows():
@@ -1317,5 +1420,253 @@ def compare_all_versions_multidataset_validation(
         output_md,
         selected_bonus=selected_bonus,
         selected_threshold=selected_threshold,
+    )
+    return results
+
+
+def compare_domain_adaptation_validation(
+    train_data_path: str | Path,
+    adapt_data_paths: Sequence[tuple[str, str | Path]],
+    challenge_data_paths: Sequence[tuple[str, str | Path]] = (),
+    output_csv: str | Path = "docs/experiments/domain_adaptation_validation.csv",
+    output_md: str | Path = "docs/experiments/domain_adaptation_validation.md",
+    adaptation_summary_csv: str | Path = "docs/experiments/domain_adaptation_splits.csv",
+    test_size: float = 0.3,
+    validation_size: float = 0.2,
+    adapt_train_size: float = 0.3,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """Compare main-only models with a multi-source v6 adaptation model."""
+    if not 0 < adapt_train_size < 1:
+        raise ValueError("adapt_train_size must be between 0 and 1.")
+
+    main_data = read_dataset(train_data_path)
+    main_stratify = main_data["label"] if main_data["label"].nunique() > 1 else None
+    main_train_x, main_holdout_x, main_train_y, main_holdout_y = train_test_split(
+        main_data["text"],
+        main_data["label"],
+        test_size=test_size,
+        random_state=random_state,
+        stratify=main_stratify,
+    )
+    valid_stratify = main_train_y if main_train_y.nunique() > 1 else None
+    main_fit_x, main_valid_x, main_fit_y, main_valid_y = train_test_split(
+        main_train_x,
+        main_train_y,
+        test_size=validation_size,
+        random_state=random_state,
+        stratify=valid_stratify,
+    )
+
+    adapt_train_x_parts: list[pd.Series] = []
+    adapt_train_y_parts: list[pd.Series] = []
+    adapt_fit_x_parts: list[pd.Series] = []
+    adapt_fit_y_parts: list[pd.Series] = []
+    adapt_valid_x_parts: list[pd.Series] = []
+    adapt_valid_y_parts: list[pd.Series] = []
+    eval_sets: list[tuple[str, str, pd.Series, pd.Series]] = [
+        (
+            "main_holdout",
+            str(train_data_path),
+            main_holdout_x.reset_index(drop=True),
+            main_holdout_y.reset_index(drop=True),
+        )
+    ]
+    split_rows: list[dict[str, object]] = []
+
+    for name, path in adapt_data_paths:
+        data = read_dataset(path)
+        stratify = data["label"] if data["label"].nunique() > 1 else None
+        adapt_train, adapt_holdout = train_test_split(
+            data,
+            train_size=adapt_train_size,
+            random_state=random_state,
+            stratify=stratify,
+        )
+        adapt_stratify = adapt_train["label"] if adapt_train["label"].nunique() > 1 else None
+        adapt_fit, adapt_valid = train_test_split(
+            adapt_train,
+            test_size=validation_size,
+            random_state=random_state,
+            stratify=adapt_stratify,
+        )
+
+        adapt_train_x_parts.append(adapt_train["text"].reset_index(drop=True))
+        adapt_train_y_parts.append(adapt_train["label"].reset_index(drop=True))
+        adapt_fit_x_parts.append(adapt_fit["text"].reset_index(drop=True))
+        adapt_fit_y_parts.append(adapt_fit["label"].reset_index(drop=True))
+        adapt_valid_x_parts.append(adapt_valid["text"].reset_index(drop=True))
+        adapt_valid_y_parts.append(adapt_valid["label"].reset_index(drop=True))
+        eval_sets.append(
+            (
+                f"{name}_holdout",
+                str(path),
+                adapt_holdout["text"].reset_index(drop=True),
+                adapt_holdout["label"].reset_index(drop=True),
+            )
+        )
+        split_rows.append(
+            {
+                "dataset": name,
+                "total_rows": int(len(data)),
+                "adapt_train_rows": int(len(adapt_train)),
+                "adapt_fit_rows": int(len(adapt_fit)),
+                "adapt_valid_rows": int(len(adapt_valid)),
+                "holdout_rows": int(len(adapt_holdout)),
+                "holdout_spam": int((adapt_holdout["label"] == 1).sum()),
+                "holdout_normal": int((adapt_holdout["label"] == 0).sum()),
+            }
+        )
+
+    for name, path in challenge_data_paths:
+        data = read_dataset(path)
+        eval_sets.append(
+            (
+                name,
+                str(path),
+                data["text"].reset_index(drop=True),
+                data["label"].reset_index(drop=True),
+            )
+        )
+
+    main_tuning_baseline, main_tuning_csn = _train_baseline_and_csn(main_fit_x, main_fit_y)
+    main_validation_grid = _search_max_fusion_threshold(
+        main_tuning_baseline,
+        main_tuning_csn,
+        main_valid_x,
+        main_valid_y,
+    )
+    main_selected = _select_best_fusion_threshold(main_validation_grid)
+    main_bonus = float(main_selected["risk_bonus"])
+    main_threshold = float(main_selected["threshold"])
+
+    v3_main_model = build_pipeline(analyzer="char_csn", classifier="linear_svm")
+    v3_main_fit_x, v3_main_fit_y = _with_keyword_augmentation(main_train_x, main_train_y)
+    v3_main_model.fit(v3_main_fit_x, v3_main_fit_y)
+    v5_main_baseline, v5_main_csn = _train_baseline_and_csn(main_train_x, main_train_y)
+
+    multisource_train_x = pd.concat([main_train_x.reset_index(drop=True), *adapt_train_x_parts], ignore_index=True)
+    multisource_train_y = pd.concat([main_train_y.reset_index(drop=True), *adapt_train_y_parts], ignore_index=True)
+    multisource_fit_x = pd.concat([main_fit_x.reset_index(drop=True), *adapt_fit_x_parts], ignore_index=True)
+    multisource_fit_y = pd.concat([main_fit_y.reset_index(drop=True), *adapt_fit_y_parts], ignore_index=True)
+    multisource_valid_x = pd.concat([main_valid_x.reset_index(drop=True), *adapt_valid_x_parts], ignore_index=True)
+    multisource_valid_y = pd.concat([main_valid_y.reset_index(drop=True), *adapt_valid_y_parts], ignore_index=True)
+
+    tuning_baseline, tuning_csn = _train_baseline_and_csn(multisource_fit_x, multisource_fit_y)
+    validation_grid = _search_max_fusion_threshold(
+        tuning_baseline,
+        tuning_csn,
+        multisource_valid_x,
+        multisource_valid_y,
+    )
+    selected = _select_best_fusion_threshold(validation_grid)
+    selected_bonus = float(selected["risk_bonus"])
+    selected_threshold = float(selected["threshold"])
+
+    v6_baseline, v6_csn = _train_baseline_and_csn(multisource_train_x, multisource_train_y)
+
+    main_valid_bridge_scores = _max_fusion_scores(
+        main_tuning_baseline,
+        main_tuning_csn,
+        multisource_valid_x,
+        main_bonus,
+    )
+    multi_valid_bridge_scores = _max_fusion_scores(
+        tuning_baseline,
+        tuning_csn,
+        multisource_valid_x,
+        selected_bonus,
+    )
+    bridge_validation_grid = _search_score_threshold(
+        np.maximum(main_valid_bridge_scores, multi_valid_bridge_scores),
+        multisource_valid_y,
+    )
+    bridge_selected = _select_best_fusion_threshold(bridge_validation_grid)
+    bridge_threshold = float(bridge_selected["threshold"])
+
+    rows: list[dict[str, object]] = []
+    for dataset_name, source_path, texts, labels in eval_sets:
+        v3_scores = np.asarray(score_texts(v3_main_model, texts), dtype=float)
+        v5_baseline_scores = np.asarray(score_texts(v5_main_baseline, texts), dtype=float)
+        v5_csn_scores = np.asarray(score_texts(v5_main_csn, texts), dtype=float)
+        v6_baseline_scores = np.asarray(score_texts(v6_baseline, texts), dtype=float)
+        v6_csn_scores = np.asarray(score_texts(v6_csn, texts), dtype=float)
+        risk_scores = np.asarray(spam_risk_scores(texts), dtype=float)
+        v5_fusion_scores = np.maximum(v5_baseline_scores, v5_csn_scores) + main_bonus * risk_scores
+        v6_fusion_scores = np.maximum(v6_baseline_scores, v6_csn_scores) + selected_bonus * risk_scores
+        bridge_scores = np.maximum(v5_fusion_scores, v6_fusion_scores)
+        counts = labels.value_counts().to_dict()
+
+        configs = (
+            (
+                "v3_main_only",
+                "主数据训练的 CSN 关键词增强模型",
+                v3_scores,
+                0.0,
+                0.0,
+            ),
+            (
+                "v5_main_only_fusion",
+                "主数据训练的 v5 分数融合模型",
+                v5_fusion_scores,
+                main_bonus,
+                main_threshold,
+            ),
+            (
+                "v6_csn_aug_multisource",
+                "主数据 + 外部适配数据训练的 CSN 关键词增强模型",
+                v6_csn_scores,
+                0.0,
+                0.0,
+            ),
+            (
+                "v6_fusion_multisource",
+                "主数据 + 外部适配数据训练的分数融合模型",
+                v6_fusion_scores,
+                selected_bonus,
+                selected_threshold,
+            ),
+            (
+                "v7_bridge_main_multisource",
+                "v5 主数据模型与 v6 多来源模型的 max-score 桥接",
+                bridge_scores,
+                0.0,
+                bridge_threshold,
+            ),
+        )
+        for name, description, scores, risk_bonus, threshold in configs:
+            metrics = _evaluate_threshold(labels, scores, threshold)
+            rows.append(
+                {
+                    "dataset": dataset_name,
+                    "source_path": source_path,
+                    "name": name,
+                    "description": description,
+                    "risk_bonus": risk_bonus,
+                    "threshold": threshold,
+                    "n_samples": int(len(labels)),
+                    "n_normal": int(counts.get(0, 0)),
+                    "n_spam": int(counts.get(1, 0)),
+                    **metrics,
+                }
+            )
+
+    results = pd.DataFrame(rows)
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    results.to_csv(output_csv, index=False)
+
+    adaptation_summary = pd.DataFrame(split_rows)
+    split_output = Path(adaptation_summary_csv)
+    split_output.parent.mkdir(parents=True, exist_ok=True)
+    adaptation_summary.to_csv(split_output, index=False)
+
+    write_domain_adaptation_markdown(
+        results,
+        adaptation_summary,
+        output_md,
+        selected_bonus=selected_bonus,
+        selected_threshold=selected_threshold,
+        bridge_threshold=bridge_threshold,
     )
     return results

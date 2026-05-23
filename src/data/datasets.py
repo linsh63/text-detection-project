@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+from numbers import Integral, Real
 from pathlib import Path
 from typing import Iterable
 
 import pandas as pd
 
 
-LABEL_COLUMNS = ("label", "tag", "class", "target", "y")
-TEXT_COLUMNS = ("text", "content", "message", "sentence", "sms")
+LABEL_COLUMNS = ("label", "labels", "tag", "class", "target", "y", "is_spam", "type", "category")
+TEXT_COLUMNS = ("text", "content", "message", "sentence", "sms", "comment", "conversation")
 FBS_IGNORED_FILES = {"README.md", ".gitattributes"}
+POSITIVE_LABELS = {"1", "spam", "junk", "垃圾", "垃圾短信", "广告", "positive", "yes", "true"}
+NEGATIVE_LABELS = {"0", "ham", "normal", "正常", "正常短信", "conversation", "非垃圾", "negative", "no", "false"}
 
 
 def _clean_labeled_frame(data: pd.DataFrame) -> pd.DataFrame:
@@ -29,6 +32,27 @@ def _find_column(columns: Iterable[str], candidates: tuple[str, ...]) -> str | N
     for candidate in candidates:
         if candidate in lowered:
             return lowered[candidate]
+    return None
+
+
+def _normalize_hf_label(value, feature=None) -> int | None:
+    if feature is not None and hasattr(feature, "int2str") and isinstance(value, Integral):
+        value = feature.int2str(int(value))
+
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, Integral):
+        value = int(value)
+        return value if value in (0, 1) else None
+    if isinstance(value, Real) and float(value).is_integer():
+        value = int(value)
+        return value if value in (0, 1) else None
+
+    text = str(value).strip().lower()
+    if text in POSITIVE_LABELS:
+        return 1
+    if text in NEGATIVE_LABELS:
+        return 0
     return None
 
 
@@ -194,6 +218,63 @@ def prepare_fbs_mixed_dataset(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     sampled.to_csv(output_path, sep="\t", index=False)
     return sampled
+
+
+def prepare_huggingface_dataset(
+    dataset_id: str,
+    output_path: str | Path,
+    token: bool | str | None = True,
+) -> pd.DataFrame:
+    """Download a Hugging Face text dataset and normalize it to label/text TSV."""
+    from datasets import load_dataset
+
+    dataset = load_dataset(dataset_id, token=token)
+    frames: list[pd.DataFrame] = []
+
+    for split_name, split in dataset.items():
+        columns = split.column_names
+        label_column = _find_column(columns, LABEL_COLUMNS)
+        text_column = _find_column(columns, TEXT_COLUMNS)
+
+        if label_column is None:
+            raise ValueError(
+                f"{dataset_id}/{split_name}: cannot find label column, columns={columns}"
+            )
+
+        preview = split.select(range(min(200, len(split)))).to_pandas()
+        if text_column is None:
+            candidates = [column for column in columns if column != label_column]
+            if not candidates:
+                raise ValueError(
+                    f"{dataset_id}/{split_name}: cannot find text column, columns={columns}"
+                )
+            text_column = max(
+                candidates,
+                key=lambda column: preview[column].astype(str).str.len().mean(),
+            )
+
+        data = split.to_pandas()
+        label_feature = split.features.get(label_column)
+        frame = pd.DataFrame(
+            {
+                "label": [
+                    _normalize_hf_label(value, label_feature) for value in data[label_column]
+                ],
+                "text": data[text_column].astype(str).str.strip(),
+            }
+        )
+        frame = frame.dropna(subset=["label", "text"]).copy()
+        frame["label"] = frame["label"].astype(int)
+        frame = frame[frame["text"] != ""]
+        frames.append(frame)
+
+    merged = pd.concat(frames, ignore_index=True).drop_duplicates(subset=["label", "text"])
+    merged = merged.reset_index(drop=True)
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    merged.to_csv(output_path, sep="\t", index=False)
+    return merged
 
 
 def dataset_summary(data: pd.DataFrame) -> dict[str, int]:

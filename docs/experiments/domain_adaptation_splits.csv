@@ -1,0 +1,4 @@
+dataset,total_rows,adapt_train_rows,adapt_fit_rows,adapt_valid_rows,holdout_rows,holdout_spam,holdout_normal
+fbs_mixed,10000,3000,2400,600,7000,3500,3500
+hf_chinese_spam_10000,9941,2982,2385,597,6959,3488,3471
+hf_chinese_conversation_spam,7731,2319,1855,464,5412,2154,3258
