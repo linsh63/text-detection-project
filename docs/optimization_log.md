@@ -21,6 +21,7 @@
 | v2-csn | CSN Normalization | 字符相似性词表归一化 + 字符级 TF-IDF | 0.9870 | 0.9654 | 0.9380 | 对 keyword challenge 有小幅提升 |
 | v3-csn-aug | CSN + Keyword Augmentation | CSN 归一化 + 敏感关键词增强训练 | 0.9835 | 0.9570 | 0.9225 | keyword challenge 召回提升至 1.0000 |
 | v4-bad-case-tuned | Bad-case Risk + Threshold | bad-case 风险分数 + 验证集阈值调优 | 0.9902 | 0.9728 | 0.9510 | 在保持 keyword challenge 召回 1.0000 的同时减少误杀 |
+| v5-max-score-fusion | Score Fusion Candidate | `max(v1分数, v3分数) + bad-case风险分数` | 0.9917 | 0.9771 | 0.9587 | 实验分支候选方案，略优于 v4 |
 
 ## v0-smoke Baseline
 
@@ -347,3 +348,68 @@ threshold = 0.35
 ### 结论
 
 v4 把 v3 的主要副作用“误杀过多”压了下来，并保留了 CSN 对关键词变体的鲁棒性。代价是垃圾文本召回率从 v1 的 0.9768 降到 0.9487，因此它更适合作为“高精度、低误杀、抗变体”的版本；如果业务更看重极限召回，可以保留 v1/v3 作为对照。报告中可以把 v1、v3、v4 放在一张图里，展示“普通检测效果、误杀控制、对抗鲁棒性”三者之间的权衡。
+
+## v5-max-score-fusion 分数融合候选实验
+
+### 目标
+
+在不破坏当前 v4 稳定版本的基础上，测试一个新的分数融合方案：
+
+```text
+fusion_score = max(v1_baseline_score, v3_csn_score) + risk_bonus * bad_case_risk_score
+```
+
+直觉是：
+
+- v1 baseline 对普通中文垃圾文本比较稳，可以补充 v3 在普通集上的副作用。
+- v3 CSN 对变体关键词很强，可以保留 keyword challenge 的鲁棒性。
+- bad-case 风险分数继续补充赌博黑话、URL 变体、插符号规避等漏检类型。
+
+### 可回退方式
+
+该实验在 `experiment/fusion-v5` 分支完成，`main` 分支停留在 v4 报告资产版本。若不采用本实验，执行：
+
+```bash
+git switch main
+```
+
+即可回到当前稳定版本。
+
+### 命令
+
+```bash
+./.venv/bin/python -m src.cli compare-fusions --data data/processed/spam_message_20k.tsv --adversarial data/processed/keyword_challenge.tsv
+```
+
+结果文件：
+
+- `docs/fusion_experiment.csv`
+- `docs/fusion_experiment.md`
+- `docs/fusion_stability.csv`
+
+### 结果
+
+验证集选中参数：
+
+```text
+risk_bonus = 0.40
+threshold = 0.40
+```
+
+固定测试集结果：
+
+| 方法 | Accuracy | Macro F1 | Spam F1 | Precision | Recall | FP | FN | Keyword Challenge Recall |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| v4 bad-case 调优 | 0.9902 | 0.9728 | 0.9510 | 0.9534 | 0.9487 | 28 | 31 | 1.0000 |
+| v5 max-score fusion | 0.9917 | 0.9771 | 0.9587 | 0.9556 | 0.9619 | 27 | 23 | 1.0000 |
+
+多随机划分均值：
+
+| 方法 | Accuracy | Spam F1 | FP | FN |
+|---|---:|---:|---:|---:|
+| v4 bad-case 调优 | 0.9906 | 0.9530 | 23.43 | 32.86 |
+| v5 max-score fusion | 0.9911 | 0.9558 | 23.43 | 29.71 |
+
+### 结论
+
+v5 在固定测试集上有明确提升：Spam F1 从 0.9510 提升到 0.9587，漏检从 31 降到 23，并保持对抗召回 1.0000。多随机划分下也有小幅平均提升，但幅度不大，因此它适合作为“候选优化方案”保留；若后续报告篇幅有限，仍可以把 v4 作为主线稳定版本，把 v5 作为进一步尝试。

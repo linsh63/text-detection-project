@@ -11,6 +11,7 @@ from .experiments import (
     compare_bad_case_optimization,
     compare_baselines,
     compare_csn_optimization,
+    compare_score_fusion_optimization,
 )
 from .modeling import evaluate_model, predict_text, train_baseline
 from .visualization import generate_report_assets
@@ -95,6 +96,19 @@ def build_parser() -> argparse.ArgumentParser:
     plot_parser.add_argument("--input", default="docs/bad_case_optimization.csv")
     plot_parser.add_argument("--out-svg", default="docs/figures/model_comparison.svg")
     plot_parser.add_argument("--out-md", default="docs/report_summary.md")
+
+    fusion_parser = subparsers.add_parser(
+        "compare-fusions",
+        help="Compare v4 with a max-score fusion candidate",
+    )
+    fusion_parser.add_argument("--data", required=True)
+    fusion_parser.add_argument("--adversarial", required=True)
+    fusion_parser.add_argument("--out-csv", default="docs/fusion_experiment.csv")
+    fusion_parser.add_argument("--out-md", default="docs/fusion_experiment.md")
+    fusion_parser.add_argument("--stability-csv", default="docs/fusion_stability.csv")
+    fusion_parser.add_argument("--test-size", type=float, default=0.3)
+    fusion_parser.add_argument("--validation-size", type=float, default=0.2)
+    fusion_parser.add_argument("--random-state", type=int, default=42)
 
     return parser
 
@@ -266,6 +280,36 @@ def main() -> None:
         )
         print(f"Saved figure to: {figure}")
         print(f"Saved summary to: {summary}")
+        return
+
+    if args.command == "compare-fusions":
+        results = compare_score_fusion_optimization(
+            data_path=args.data,
+            adversarial_path=args.adversarial,
+            output_csv=args.out_csv,
+            output_md=args.out_md,
+            stability_csv=args.stability_csv,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            random_state=args.random_state,
+        )
+        print(f"Saved CSV to: {args.out_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(f"Saved stability CSV to: {args.stability_csv}")
+        print(
+            results[
+                [
+                    "name",
+                    "risk_bonus",
+                    "threshold",
+                    "clean_accuracy",
+                    "clean_f1_spam",
+                    "clean_false_positive",
+                    "clean_false_negative",
+                    "adv_recall_spam",
+                ]
+            ].to_string(index=False)
+        )
         return
 
     raise ValueError(f"Unsupported command: {args.command}")

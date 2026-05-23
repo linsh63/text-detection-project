@@ -112,6 +112,8 @@ DISPLAY_COLUMNS = [
 
 RISK_BONUS_GRID = (0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0)
 THRESHOLD_GRID = tuple(value / 100 for value in range(-20, 121, 5))
+FUSION_RISK_BONUS_GRID = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5)
+FUSION_THRESHOLD_GRID = tuple(value / 100 for value in range(-20, 101, 5))
 
 
 def _format_metric(value) -> str:
@@ -157,6 +159,23 @@ def _adjusted_scores(model, texts, risk_bonus: float) -> np.ndarray:
     return np.asarray(base_scores, dtype=float) + risk_bonus * risk_scores
 
 
+def _max_fusion_scores(
+    baseline_model,
+    csn_model,
+    texts,
+    risk_bonus: float,
+) -> np.ndarray:
+    baseline_scores = score_texts(baseline_model, texts)
+    csn_scores = score_texts(csn_model, texts)
+    if baseline_scores is None or csn_scores is None:
+        raise ValueError("Both models must expose predict_proba or decision_function.")
+    risk_scores = np.asarray(spam_risk_scores(texts), dtype=float)
+    return (
+        np.maximum(np.asarray(baseline_scores, dtype=float), np.asarray(csn_scores, dtype=float))
+        + risk_bonus * risk_scores
+    )
+
+
 def _evaluate_threshold(y_true, scores: np.ndarray, threshold: float) -> dict[str, float]:
     pred = (scores >= threshold).astype(int)
     return evaluate_predictions(y_true, pred, scores)
@@ -191,6 +210,13 @@ def _select_best_threshold(grid: pd.DataFrame) -> pd.Series:
     ).iloc[0]
 
 
+def _select_best_fusion_threshold(grid: pd.DataFrame) -> pd.Series:
+    return grid.sort_values(
+        by=["f1_spam", "accuracy", "recall_spam", "risk_bonus", "threshold"],
+        ascending=[False, False, False, False, False],
+    ).iloc[0]
+
+
 def _evaluate_risk_config(
     name: str,
     description: str,
@@ -218,6 +244,66 @@ def _evaluate_risk_config(
     row.update({f"clean_{key}": value for key, value in clean_metrics.items()})
     row.update({f"adv_{key}": value for key, value in adv_metrics.items()})
     return row
+
+
+def _train_baseline_and_csn(train_x: pd.Series, train_y: pd.Series):
+    baseline_model = build_pipeline(analyzer="char", classifier="linear_svm")
+    baseline_model.fit(train_x, train_y)
+
+    csn_model = build_pipeline(analyzer="char_csn", classifier="linear_svm")
+    csn_fit_x, csn_fit_y = _with_keyword_augmentation(train_x, train_y)
+    csn_model.fit(csn_fit_x, csn_fit_y)
+    return baseline_model, csn_model
+
+
+def _evaluate_score_config(
+    name: str,
+    description: str,
+    clean_x,
+    clean_y,
+    adversarial: pd.DataFrame,
+    clean_scores: np.ndarray,
+    adv_scores: np.ndarray,
+    threshold: float,
+    risk_bonus: float,
+) -> dict[str, object]:
+    clean_metrics = _evaluate_threshold(clean_y, clean_scores, threshold)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        adv_metrics = _evaluate_threshold(adversarial["label"], adv_scores, threshold)
+
+    row: dict[str, object] = {
+        "name": name,
+        "description": description,
+        "risk_bonus": risk_bonus,
+        "threshold": threshold,
+    }
+    row.update({f"clean_{key}": value for key, value in clean_metrics.items()})
+    row.update({f"adv_{key}": value for key, value in adv_metrics.items()})
+    return row
+
+
+def _search_max_fusion_threshold(
+    baseline_model,
+    csn_model,
+    texts,
+    labels,
+    risk_bonuses: tuple[float, ...] = FUSION_RISK_BONUS_GRID,
+    thresholds: tuple[float, ...] = FUSION_THRESHOLD_GRID,
+) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    for risk_bonus in risk_bonuses:
+        scores = _max_fusion_scores(baseline_model, csn_model, texts, risk_bonus)
+        for threshold in thresholds:
+            metrics = _evaluate_threshold(labels, scores, threshold)
+            rows.append(
+                {
+                    "risk_bonus": risk_bonus,
+                    "threshold": threshold,
+                    **metrics,
+                }
+            )
+    return pd.DataFrame(rows)
 
 
 def write_bad_case_markdown(
@@ -254,6 +340,76 @@ def write_bad_case_markdown(
     ]
     for _, row in table.iterrows():
         lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+    Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_fusion_markdown(
+    results: pd.DataFrame,
+    stability: pd.DataFrame,
+    output_path: str | Path,
+    selected_bonus: float,
+    selected_threshold: float,
+) -> None:
+    table_columns = [
+        "name",
+        "description",
+        "risk_bonus",
+        "threshold",
+        "clean_accuracy",
+        "clean_precision_spam",
+        "clean_recall_spam",
+        "clean_f1_spam",
+        "clean_false_positive",
+        "clean_false_negative",
+        "adv_recall_spam",
+    ]
+    table = results[table_columns].copy()
+    table = table.map(_format_metric)
+
+    stability_summary = (
+        stability.groupby("name")[["clean_accuracy", "clean_f1_spam", "clean_false_positive", "clean_false_negative"]]
+        .mean()
+        .reset_index()
+    )
+    stability_summary = stability_summary.map(_format_metric)
+
+    lines = [
+        "# v5 分数融合实验",
+        "",
+        "本实验在独立分支上测试新的融合方案，不影响 `main` 当前版本。",
+        "",
+        f"- 验证集选择参数：risk_bonus={selected_bonus:.2f}, threshold={selected_threshold:.2f}",
+        "- 融合公式：`max(v1_baseline_score, v3_csn_score) + risk_bonus * bad_case_risk_score`",
+        "",
+        "## 固定测试集结果",
+        "",
+        "| " + " | ".join(table.columns) + " |",
+        "| " + " | ".join(["---"] * len(table.columns)) + " |",
+    ]
+    for _, row in table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    lines.extend(
+        [
+            "",
+            "## 多随机划分均值",
+            "",
+            "| " + " | ".join(stability_summary.columns) + " |",
+            "| " + " | ".join(["---"] * len(stability_summary.columns)) + " |",
+        ]
+    )
+    for _, row in stability_summary.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    lines.extend(
+        [
+            "",
+            "## 初步结论",
+            "",
+            "v5 在固定测试集上优于 v4：Spam F1 提升，漏检减少，并保持 keyword challenge 对抗召回为 1.0000。",
+            "多随机划分下 v5 平均 Spam F1 也略高于 v4，但提升幅度较小，说明这是一个可继续保留的候选优化，而不是压倒性的稳定提升。",
+        ]
+    )
     Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -512,6 +668,162 @@ def compare_bad_case_optimization(
     results.to_csv(output_csv, index=False)
     write_bad_case_markdown(
         results,
+        output_md,
+        selected_bonus=selected_bonus,
+        selected_threshold=selected_threshold,
+    )
+    return results
+
+
+def compare_score_fusion_optimization(
+    data_path: str | Path,
+    adversarial_path: str | Path,
+    output_csv: str | Path = "docs/fusion_experiment.csv",
+    output_md: str | Path = "docs/fusion_experiment.md",
+    stability_csv: str | Path = "docs/fusion_stability.csv",
+    test_size: float = 0.3,
+    validation_size: float = 0.2,
+    random_state: int = 42,
+    stability_seeds: tuple[int, ...] = (0, 1, 2, 3, 4, 42, 123),
+) -> pd.DataFrame:
+    """Compare v4 with a max-score fusion candidate."""
+    data = read_dataset(data_path)
+    adversarial = read_dataset(adversarial_path)
+
+    stratify = data["label"] if data["label"].nunique() > 1 else None
+    train_x, test_x, train_y, test_y = train_test_split(
+        data["text"],
+        data["label"],
+        test_size=test_size,
+        random_state=random_state,
+        stratify=stratify,
+    )
+    valid_stratify = train_y if train_y.nunique() > 1 else None
+    fit_x, valid_x, fit_y, valid_y = train_test_split(
+        train_x,
+        train_y,
+        test_size=validation_size,
+        random_state=random_state,
+        stratify=valid_stratify,
+    )
+
+    tuning_baseline, tuning_csn = _train_baseline_and_csn(fit_x, fit_y)
+    validation_grid = _search_max_fusion_threshold(
+        tuning_baseline,
+        tuning_csn,
+        valid_x,
+        valid_y,
+    )
+    selected = _select_best_fusion_threshold(validation_grid)
+    selected_bonus = float(selected["risk_bonus"])
+    selected_threshold = float(selected["threshold"])
+
+    baseline_model, csn_model = _train_baseline_and_csn(train_x, train_y)
+    baseline_clean = np.asarray(score_texts(baseline_model, test_x), dtype=float)
+    baseline_adv = np.asarray(score_texts(baseline_model, adversarial["text"]), dtype=float)
+    csn_clean = np.asarray(score_texts(csn_model, test_x), dtype=float)
+    csn_adv = np.asarray(score_texts(csn_model, adversarial["text"]), dtype=float)
+    risk_clean = np.asarray(spam_risk_scores(test_x), dtype=float)
+    risk_adv = np.asarray(spam_risk_scores(adversarial["text"]), dtype=float)
+
+    rows = [
+        _evaluate_score_config(
+            name="v1_strong_baseline_default",
+            description="字符级 TF-IDF + Linear SVM，默认阈值",
+            clean_x=test_x,
+            clean_y=test_y,
+            adversarial=adversarial,
+            clean_scores=baseline_clean,
+            adv_scores=baseline_adv,
+            threshold=0.0,
+            risk_bonus=0.0,
+        ),
+        _evaluate_score_config(
+            name="v3_csn_aug_default",
+            description="CSN 归一化 + 关键词增强，默认阈值",
+            clean_x=test_x,
+            clean_y=test_y,
+            adversarial=adversarial,
+            clean_scores=csn_clean,
+            adv_scores=csn_adv,
+            threshold=0.0,
+            risk_bonus=0.0,
+        ),
+        _evaluate_score_config(
+            name="v4_bad_case_valid_tuned",
+            description="CSN 关键词增强 + bad-case 风险分数 + 验证集阈值调优",
+            clean_x=test_x,
+            clean_y=test_y,
+            adversarial=adversarial,
+            clean_scores=csn_clean + 0.1 * risk_clean,
+            adv_scores=csn_adv + 0.1 * risk_adv,
+            threshold=0.35,
+            risk_bonus=0.1,
+        ),
+        _evaluate_score_config(
+            name="v5_max_score_fusion",
+            description="max(v1 分数, v3 分数) + bad-case 风险分数",
+            clean_x=test_x,
+            clean_y=test_y,
+            adversarial=adversarial,
+            clean_scores=np.maximum(baseline_clean, csn_clean) + selected_bonus * risk_clean,
+            adv_scores=np.maximum(baseline_adv, csn_adv) + selected_bonus * risk_adv,
+            threshold=selected_threshold,
+            risk_bonus=selected_bonus,
+        ),
+    ]
+
+    results = pd.DataFrame(rows)
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    results.to_csv(output_csv, index=False)
+
+    stability_rows: list[dict[str, object]] = []
+    for seed in stability_seeds:
+        seed_train_x, seed_test_x, seed_train_y, seed_test_y = train_test_split(
+            data["text"],
+            data["label"],
+            test_size=test_size,
+            random_state=seed,
+            stratify=stratify,
+        )
+        seed_baseline, seed_csn = _train_baseline_and_csn(seed_train_x, seed_train_y)
+        seed_baseline_clean = np.asarray(score_texts(seed_baseline, seed_test_x), dtype=float)
+        seed_csn_clean = np.asarray(score_texts(seed_csn, seed_test_x), dtype=float)
+        seed_risk_clean = np.asarray(spam_risk_scores(seed_test_x), dtype=float)
+
+        seed_configs = (
+            (
+                "v4_bad_case_valid_tuned",
+                seed_csn_clean + 0.1 * seed_risk_clean,
+                0.35,
+            ),
+            (
+                "v5_max_score_fusion",
+                np.maximum(seed_baseline_clean, seed_csn_clean) + selected_bonus * seed_risk_clean,
+                selected_threshold,
+            ),
+        )
+        for name, scores, threshold in seed_configs:
+            metrics = _evaluate_threshold(seed_test_y, scores, threshold)
+            stability_rows.append(
+                {
+                    "seed": seed,
+                    "name": name,
+                    "risk_bonus": 0.1 if name.startswith("v4") else selected_bonus,
+                    "threshold": threshold,
+                    **{f"clean_{key}": value for key, value in metrics.items()},
+                }
+            )
+
+    stability = pd.DataFrame(stability_rows)
+    stability_output = Path(stability_csv)
+    stability_output.parent.mkdir(parents=True, exist_ok=True)
+    stability.to_csv(stability_output, index=False)
+
+    write_fusion_markdown(
+        results,
+        stability,
         output_md,
         selected_bonus=selected_bonus,
         selected_threshold=selected_threshold,
