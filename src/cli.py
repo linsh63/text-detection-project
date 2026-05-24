@@ -20,8 +20,17 @@ from .experiments.runners import (
     compare_baselines,
     compare_csn_optimization,
     compare_domain_adaptation_validation,
+    compare_evaluation_protocols,
     compare_multidataset_fusion_validation,
     compare_score_fusion_optimization,
+)
+from .experiments.semantic_runners import (
+    DEFAULT_ENCODERS,
+    compare_semantic_v8_auto_augmentation,
+    compare_semantic_v8_encoders,
+    compare_semantic_v8_filtered_auto_augmentation,
+    compare_semantic_v8_protocols,
+    diagnose_semantic_v8_calibration,
 )
 from .models.modeling import evaluate_model, predict_text, train_baseline
 from .reporting.visualization import generate_report_assets
@@ -234,6 +243,284 @@ def build_parser() -> argparse.ArgumentParser:
     adaptation_parser.add_argument("--validation-size", type=float, default=0.2)
     adaptation_parser.add_argument("--adapt-train-size", type=float, default=0.3)
     adaptation_parser.add_argument("--random-state", type=int, default=42)
+
+    protocol_parser = subparsers.add_parser(
+        "validate-protocols",
+        help="Run v0-v7 through fixed evaluation protocols A/B/C/D",
+    )
+    protocol_parser.add_argument("--train-data", required=True)
+    protocol_parser.add_argument(
+        "--external-data",
+        action="append",
+        default=[],
+        help="External binary dataset in name=path form. Can be repeated.",
+    )
+    protocol_parser.add_argument(
+        "--challenge-data",
+        action="append",
+        default=[],
+        help="Challenge-only eval dataset in name=path form. Can be repeated.",
+    )
+    protocol_parser.add_argument(
+        "--out-csv",
+        default="docs/experiments/evaluation_protocol_results.csv",
+    )
+    protocol_parser.add_argument(
+        "--out-md",
+        default="docs/experiments/evaluation_protocol_results.md",
+    )
+    protocol_parser.add_argument(
+        "--split-csv",
+        default="docs/experiments/evaluation_protocol_splits.csv",
+    )
+    protocol_parser.add_argument("--test-size", type=float, default=0.3)
+    protocol_parser.add_argument("--validation-size", type=float, default=0.2)
+    protocol_parser.add_argument("--adapt-train-size", type=float, default=0.3)
+    protocol_parser.add_argument("--random-state", type=int, default=42)
+
+    semantic_parser = subparsers.add_parser(
+        "validate-semantic-v8",
+        help="Run v8.0 frozen semantic encoder through protocols A/B/C/D",
+    )
+    semantic_parser.add_argument("--train-data", required=True)
+    semantic_parser.add_argument(
+        "--external-data",
+        action="append",
+        default=[],
+        help="External binary dataset in name=path form. Can be repeated.",
+    )
+    semantic_parser.add_argument(
+        "--challenge-data",
+        action="append",
+        default=[],
+        help="Challenge-only eval dataset in name=path form. Can be repeated.",
+    )
+    semantic_parser.add_argument("--model-name", default="BAAI/bge-small-zh-v1.5")
+    semantic_parser.add_argument("--batch-size", type=int, default=64)
+    semantic_parser.add_argument("--device")
+    semantic_parser.add_argument(
+        "--out-csv",
+        default="docs/experiments/semantic_v8_protocol_results.csv",
+    )
+    semantic_parser.add_argument(
+        "--out-md",
+        default="docs/experiments/semantic_v8_protocol_results.md",
+    )
+    semantic_parser.add_argument(
+        "--split-csv",
+        default="docs/experiments/semantic_v8_protocol_splits.csv",
+    )
+    semantic_parser.add_argument("--test-size", type=float, default=0.3)
+    semantic_parser.add_argument("--validation-size", type=float, default=0.2)
+    semantic_parser.add_argument("--adapt-train-size", type=float, default=0.3)
+    semantic_parser.add_argument("--random-state", type=int, default=42)
+
+    semantic_diagnostics_parser = subparsers.add_parser(
+        "diagnose-semantic-v8",
+        help="Run v8.1 semantic threshold calibration diagnostics",
+    )
+    semantic_diagnostics_parser.add_argument("--train-data", required=True)
+    semantic_diagnostics_parser.add_argument(
+        "--external-data",
+        action="append",
+        default=[],
+        help="External binary dataset in name=path form. Can be repeated.",
+    )
+    semantic_diagnostics_parser.add_argument(
+        "--challenge-data",
+        action="append",
+        default=[],
+        help="Challenge-only eval dataset in name=path form. Can be repeated.",
+    )
+    semantic_diagnostics_parser.add_argument("--model-name", default="BAAI/bge-small-zh-v1.5")
+    semantic_diagnostics_parser.add_argument("--batch-size", type=int, default=64)
+    semantic_diagnostics_parser.add_argument("--device")
+    semantic_diagnostics_parser.add_argument(
+        "--diagnostics-csv",
+        default="docs/experiments/semantic_v8_calibration_diagnostics.csv",
+    )
+    semantic_diagnostics_parser.add_argument(
+        "--threshold-grid-csv",
+        default="docs/experiments/semantic_v8_threshold_grid.csv",
+    )
+    semantic_diagnostics_parser.add_argument(
+        "--score-samples-csv",
+        default="docs/experiments/semantic_v8_score_samples.csv",
+    )
+    semantic_diagnostics_parser.add_argument(
+        "--pr-curve-csv",
+        default="docs/experiments/semantic_v8_pr_curve.csv",
+    )
+    semantic_diagnostics_parser.add_argument(
+        "--out-md",
+        default="docs/experiments/semantic_v8_calibration_diagnostics.md",
+    )
+    semantic_diagnostics_parser.add_argument(
+        "--threshold-figure",
+        default="docs/figures/semantic_v8_threshold_gain.svg",
+    )
+    semantic_diagnostics_parser.add_argument(
+        "--score-figure",
+        default="docs/figures/semantic_v8_score_distribution.svg",
+    )
+    semantic_diagnostics_parser.add_argument("--test-size", type=float, default=0.3)
+    semantic_diagnostics_parser.add_argument("--validation-size", type=float, default=0.2)
+    semantic_diagnostics_parser.add_argument("--adapt-train-size", type=float, default=0.3)
+    semantic_diagnostics_parser.add_argument("--random-state", type=int, default=42)
+
+    semantic_encoder_parser = subparsers.add_parser(
+        "compare-semantic-encoders-v8",
+        help="Run v8.2 encoder comparison under protocols A/B/C/D",
+    )
+    semantic_encoder_parser.add_argument("--train-data", required=True)
+    semantic_encoder_parser.add_argument(
+        "--external-data",
+        action="append",
+        default=[],
+        help="External binary dataset in name=path form. Can be repeated.",
+    )
+    semantic_encoder_parser.add_argument(
+        "--challenge-data",
+        action="append",
+        default=[],
+        help="Challenge-only eval dataset in name=path form. Can be repeated.",
+    )
+    semantic_encoder_parser.add_argument(
+        "--encoder",
+        action="append",
+        default=[],
+        help=(
+            "Encoder in name=model_id form. Can be repeated. "
+            "Defaults to bge_small_zh, multilingual_minilm, and m3e_small."
+        ),
+    )
+    semantic_encoder_parser.add_argument("--batch-size", type=int, default=64)
+    semantic_encoder_parser.add_argument("--device")
+    semantic_encoder_parser.add_argument(
+        "--out-csv",
+        default="docs/experiments/semantic_v8_encoder_comparison.csv",
+    )
+    semantic_encoder_parser.add_argument(
+        "--out-md",
+        default="docs/experiments/semantic_v8_encoder_comparison.md",
+    )
+    semantic_encoder_parser.add_argument(
+        "--error-csv",
+        default="docs/experiments/semantic_v8_encoder_errors.csv",
+    )
+    semantic_encoder_parser.add_argument(
+        "--figure",
+        default="docs/figures/semantic_v8_encoder_comparison.svg",
+    )
+    semantic_encoder_parser.add_argument("--test-size", type=float, default=0.3)
+    semantic_encoder_parser.add_argument("--validation-size", type=float, default=0.2)
+    semantic_encoder_parser.add_argument("--adapt-train-size", type=float, default=0.3)
+    semantic_encoder_parser.add_argument("--random-state", type=int, default=42)
+    semantic_encoder_parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Stop immediately if one encoder fails to load or run.",
+    )
+
+    semantic_autoaug_parser = subparsers.add_parser(
+        "compare-semantic-autoaug-v8",
+        help="Run v8.3a automatic hard-case augmentation comparison",
+    )
+    semantic_autoaug_parser.add_argument("--train-data", required=True)
+    semantic_autoaug_parser.add_argument(
+        "--external-data",
+        action="append",
+        default=[],
+        help="External binary dataset in name=path form. Can be repeated.",
+    )
+    semantic_autoaug_parser.add_argument(
+        "--challenge-data",
+        action="append",
+        default=[],
+        help="Challenge-only eval dataset in name=path form. Can be repeated.",
+    )
+    semantic_autoaug_parser.add_argument("--model-name", default="BAAI/bge-small-zh-v1.5")
+    semantic_autoaug_parser.add_argument("--batch-size", type=int, default=64)
+    semantic_autoaug_parser.add_argument("--device")
+    semantic_autoaug_parser.add_argument(
+        "--out-csv",
+        default="docs/experiments/semantic_v8_autoaug_results.csv",
+    )
+    semantic_autoaug_parser.add_argument(
+        "--out-md",
+        default="docs/experiments/semantic_v8_autoaug_results.md",
+    )
+    semantic_autoaug_parser.add_argument(
+        "--terms-csv",
+        default="docs/experiments/semantic_v8_autoaug_terms.csv",
+    )
+    semantic_autoaug_parser.add_argument(
+        "--examples-csv",
+        default="docs/experiments/semantic_v8_autoaug_examples.csv",
+    )
+    semantic_autoaug_parser.add_argument(
+        "--figure",
+        default="docs/figures/semantic_v8_autoaug_delta.svg",
+    )
+    semantic_autoaug_parser.add_argument("--test-size", type=float, default=0.3)
+    semantic_autoaug_parser.add_argument("--validation-size", type=float, default=0.2)
+    semantic_autoaug_parser.add_argument("--adapt-train-size", type=float, default=0.3)
+    semantic_autoaug_parser.add_argument("--random-state", type=int, default=42)
+    semantic_autoaug_parser.add_argument("--max-terms", type=int, default=80)
+    semantic_autoaug_parser.add_argument("--max-augmented", type=int, default=200)
+    semantic_autoaug_parser.add_argument("--min-spam-df", type=int, default=3)
+
+    semantic_filtered_autoaug_parser = subparsers.add_parser(
+        "compare-semantic-filtered-autoaug-v8",
+        help="Run v8.3b filtered automatic augmentation plus hard negatives",
+    )
+    semantic_filtered_autoaug_parser.add_argument("--train-data", required=True)
+    semantic_filtered_autoaug_parser.add_argument(
+        "--external-data",
+        action="append",
+        default=[],
+        help="External binary dataset in name=path form. Can be repeated.",
+    )
+    semantic_filtered_autoaug_parser.add_argument(
+        "--challenge-data",
+        action="append",
+        default=[],
+        help="Challenge-only eval dataset in name=path form. Can be repeated.",
+    )
+    semantic_filtered_autoaug_parser.add_argument("--model-name", default="BAAI/bge-small-zh-v1.5")
+    semantic_filtered_autoaug_parser.add_argument("--batch-size", type=int, default=64)
+    semantic_filtered_autoaug_parser.add_argument("--device")
+    semantic_filtered_autoaug_parser.add_argument(
+        "--out-csv",
+        default="docs/experiments/semantic_v8_autoaug_filtered_results.csv",
+    )
+    semantic_filtered_autoaug_parser.add_argument(
+        "--out-md",
+        default="docs/experiments/semantic_v8_autoaug_filtered_results.md",
+    )
+    semantic_filtered_autoaug_parser.add_argument(
+        "--terms-csv",
+        default="docs/experiments/semantic_v8_autoaug_filtered_terms.csv",
+    )
+    semantic_filtered_autoaug_parser.add_argument(
+        "--examples-csv",
+        default="docs/experiments/semantic_v8_autoaug_filtered_examples.csv",
+    )
+    semantic_filtered_autoaug_parser.add_argument(
+        "--figure",
+        default="docs/figures/semantic_v8_autoaug_filtered_delta.svg",
+    )
+    semantic_filtered_autoaug_parser.add_argument("--test-size", type=float, default=0.3)
+    semantic_filtered_autoaug_parser.add_argument("--validation-size", type=float, default=0.2)
+    semantic_filtered_autoaug_parser.add_argument("--adapt-train-size", type=float, default=0.3)
+    semantic_filtered_autoaug_parser.add_argument("--random-state", type=int, default=42)
+    semantic_filtered_autoaug_parser.add_argument("--max-terms", type=int, default=80)
+    semantic_filtered_autoaug_parser.add_argument("--max-augmented", type=int, default=200)
+    semantic_filtered_autoaug_parser.add_argument("--min-spam-df", type=int, default=3)
+    semantic_filtered_autoaug_parser.add_argument("--max-hard-negatives", type=int, default=200)
+    semantic_filtered_autoaug_parser.add_argument("--positive-min-score", type=float, default=0.05)
+    semantic_filtered_autoaug_parser.add_argument("--positive-max-score", type=float, default=0.75)
+    semantic_filtered_autoaug_parser.add_argument("--hard-negative-min-score", type=float, default=0.25)
 
     return parser
 
@@ -538,6 +825,255 @@ def main() -> None:
                 [
                     "dataset",
                     "name",
+                    "accuracy",
+                    "precision_spam",
+                    "recall_spam",
+                    "f1_spam",
+                    "false_positive",
+                    "false_negative",
+                ]
+            ].to_string(index=False)
+        )
+        return
+
+    if args.command == "validate-protocols":
+        results = compare_evaluation_protocols(
+            train_data_path=args.train_data,
+            external_data_paths=_parse_named_paths(args.external_data),
+            challenge_data_paths=_parse_named_paths(args.challenge_data),
+            output_csv=args.out_csv,
+            output_md=args.out_md,
+            split_csv=args.split_csv,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            adapt_train_size=args.adapt_train_size,
+            random_state=args.random_state,
+        )
+        print(f"Saved CSV to: {args.out_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(f"Saved split summary to: {args.split_csv}")
+        print(
+            results[
+                [
+                    "protocol_id",
+                    "dataset",
+                    "model_version",
+                    "training_scope",
+                    "accuracy",
+                    "precision_spam",
+                    "recall_spam",
+                    "f1_spam",
+                    "false_positive",
+                    "false_negative",
+                ]
+            ].to_string(index=False)
+        )
+        return
+
+    if args.command == "validate-semantic-v8":
+        results = compare_semantic_v8_protocols(
+            train_data_path=args.train_data,
+            external_data_paths=_parse_named_paths(args.external_data),
+            challenge_data_paths=_parse_named_paths(args.challenge_data),
+            output_csv=args.out_csv,
+            output_md=args.out_md,
+            split_csv=args.split_csv,
+            model_name=args.model_name,
+            batch_size=args.batch_size,
+            device=args.device,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            adapt_train_size=args.adapt_train_size,
+            random_state=args.random_state,
+        )
+        print(f"Saved CSV to: {args.out_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(f"Saved split summary to: {args.split_csv}")
+        print(
+            results[
+                [
+                    "protocol_id",
+                    "dataset",
+                    "model_version",
+                    "training_scope",
+                    "accuracy",
+                    "precision_spam",
+                    "recall_spam",
+                    "f1_spam",
+                    "false_positive",
+                    "false_negative",
+                ]
+            ].to_string(index=False)
+        )
+        return
+
+    if args.command == "diagnose-semantic-v8":
+        results = diagnose_semantic_v8_calibration(
+            train_data_path=args.train_data,
+            external_data_paths=_parse_named_paths(args.external_data),
+            challenge_data_paths=_parse_named_paths(args.challenge_data),
+            diagnostics_csv=args.diagnostics_csv,
+            threshold_grid_csv=args.threshold_grid_csv,
+            score_samples_csv=args.score_samples_csv,
+            pr_curve_csv=args.pr_curve_csv,
+            output_md=args.out_md,
+            threshold_figure=args.threshold_figure,
+            score_figure=args.score_figure,
+            model_name=args.model_name,
+            batch_size=args.batch_size,
+            device=args.device,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            adapt_train_size=args.adapt_train_size,
+            random_state=args.random_state,
+        )
+        print(f"Saved diagnostics CSV to: {args.diagnostics_csv}")
+        print(f"Saved threshold grid to: {args.threshold_grid_csv}")
+        print(f"Saved score samples to: {args.score_samples_csv}")
+        print(f"Saved PR curve to: {args.pr_curve_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(f"Saved figures to: {args.threshold_figure}, {args.score_figure}")
+        print(
+            results[
+                [
+                    "protocol_id",
+                    "dataset",
+                    "model_version",
+                    "threshold_current",
+                    "threshold_oracle",
+                    "current_f1_spam",
+                    "oracle_f1_spam",
+                    "oracle_f1_gain",
+                    "pr_auc",
+                    "diagnosis",
+                ]
+            ].to_string(index=False)
+        )
+        return
+
+    if args.command == "compare-semantic-encoders-v8":
+        encoders = _parse_named_paths(args.encoder) if args.encoder else list(DEFAULT_ENCODERS)
+        results = compare_semantic_v8_encoders(
+            train_data_path=args.train_data,
+            external_data_paths=_parse_named_paths(args.external_data),
+            challenge_data_paths=_parse_named_paths(args.challenge_data),
+            encoders=encoders,
+            output_csv=args.out_csv,
+            output_md=args.out_md,
+            error_csv=args.error_csv,
+            figure_path=args.figure,
+            batch_size=args.batch_size,
+            device=args.device,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            adapt_train_size=args.adapt_train_size,
+            random_state=args.random_state,
+            continue_on_error=not args.fail_fast,
+        )
+        print(f"Saved encoder comparison CSV to: {args.out_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(f"Saved encoder errors to: {args.error_csv}")
+        print(f"Saved figure to: {args.figure}")
+        print(
+            results[
+                [
+                    "protocol_id",
+                    "dataset",
+                    "model_version",
+                    "encoder_name",
+                    "training_scope",
+                    "accuracy",
+                    "precision_spam",
+                    "recall_spam",
+                    "f1_spam",
+                    "pr_auc",
+                    "false_negative",
+                ]
+            ].to_string(index=False)
+        )
+        return
+
+    if args.command == "compare-semantic-autoaug-v8":
+        results = compare_semantic_v8_auto_augmentation(
+            train_data_path=args.train_data,
+            external_data_paths=_parse_named_paths(args.external_data),
+            challenge_data_paths=_parse_named_paths(args.challenge_data),
+            output_csv=args.out_csv,
+            output_md=args.out_md,
+            terms_csv=args.terms_csv,
+            examples_csv=args.examples_csv,
+            figure_path=args.figure,
+            model_name=args.model_name,
+            batch_size=args.batch_size,
+            device=args.device,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            adapt_train_size=args.adapt_train_size,
+            random_state=args.random_state,
+            max_terms=args.max_terms,
+            max_augmented=args.max_augmented,
+            min_spam_df=args.min_spam_df,
+        )
+        print(f"Saved auto-augmentation CSV to: {args.out_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(f"Saved mined terms to: {args.terms_csv}")
+        print(f"Saved generated examples to: {args.examples_csv}")
+        print(f"Saved figure to: {args.figure}")
+        print(
+            results[
+                [
+                    "protocol_id",
+                    "dataset",
+                    "model_version",
+                    "training_scope",
+                    "accuracy",
+                    "precision_spam",
+                    "recall_spam",
+                    "f1_spam",
+                    "false_positive",
+                    "false_negative",
+                ]
+            ].to_string(index=False)
+        )
+        return
+
+    if args.command == "compare-semantic-filtered-autoaug-v8":
+        results = compare_semantic_v8_filtered_auto_augmentation(
+            train_data_path=args.train_data,
+            external_data_paths=_parse_named_paths(args.external_data),
+            challenge_data_paths=_parse_named_paths(args.challenge_data),
+            output_csv=args.out_csv,
+            output_md=args.out_md,
+            terms_csv=args.terms_csv,
+            examples_csv=args.examples_csv,
+            figure_path=args.figure,
+            model_name=args.model_name,
+            batch_size=args.batch_size,
+            device=args.device,
+            test_size=args.test_size,
+            validation_size=args.validation_size,
+            adapt_train_size=args.adapt_train_size,
+            random_state=args.random_state,
+            max_terms=args.max_terms,
+            max_augmented=args.max_augmented,
+            min_spam_df=args.min_spam_df,
+            max_hard_negatives=args.max_hard_negatives,
+            positive_min_score=args.positive_min_score,
+            positive_max_score=args.positive_max_score,
+            hard_negative_min_score=args.hard_negative_min_score,
+        )
+        print(f"Saved filtered auto-augmentation CSV to: {args.out_csv}")
+        print(f"Saved Markdown to: {args.out_md}")
+        print(f"Saved mined terms to: {args.terms_csv}")
+        print(f"Saved generated examples to: {args.examples_csv}")
+        print(f"Saved figure to: {args.figure}")
+        print(
+            results[
+                [
+                    "protocol_id",
+                    "dataset",
+                    "model_version",
+                    "training_scope",
                     "accuracy",
                     "precision_spam",
                     "recall_spam",

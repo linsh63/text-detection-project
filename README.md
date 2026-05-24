@@ -9,11 +9,17 @@
 | 主数据集最终模型 | v5 | 主测试集 Spam F1 最高，`0.9587` |
 | 跨来源泛化展示 | v6 CSN / v6 Fusion | 外部 holdout 上提升最明显 |
 | 折中单模型 | v7 | 主数据集低于 v5，但外部集明显优于 main-only 模型 |
+| 语义模型探索 | v8.0 | 去除人工变体词表，主测试集 Spam F1 `0.9619`，但关键词挑战仍需优化 |
+| 语义自动增强探索 | v8.3b | 筛选增强 + hard negative，keyword challenge main-only F1 从 `0.0919` 提升到 `0.4211` |
 
 关键结果入口：
 
 - `docs/experiments/latest_results_summary.md`：最新结果总览
 - `docs/experiments/optimization_log.md`：完整优化记录
+- `docs/experiments/evaluation_protocol_results.md`：统一评测协议结果
+- `docs/experiments/semantic_v8_protocol_results.md`：v8.0 语义编码实验结果
+- `docs/experiments/semantic_v8_autoaug_filtered_results.md`：v8.3b 筛选增强 + hard negative 实验结果
+- `docs/references/evaluation_protocol.md`：统一评测协议定义
 - `docs/experiments/domain_adaptation_validation.md`：v6/v7 跨来源适配实验
 - `docs/reports/report_summary.md`：课程报告摘要素材
 
@@ -34,10 +40,13 @@ text-detection-project/
 ├── pyproject.toml
 └── src/
     ├── data/                # 数据读取、数据集转换和对抗样本生成
+    ├── encoders/            # v8 语义编码器封装
     ├── experiments/         # 实验 runner 和结果写出
     ├── features/            # 预处理、字符相似性和风险特征
     ├── models/              # 模型训练、评估和预测
+    ├── preprocessing/       # 不含人工词表的通用文本归一化
     ├── reporting/           # 图表和报告摘要生成
+    ├── semantic_models/     # v8 语义分类器组件
     └── tests/               # 轻量测试
 ```
 
@@ -237,7 +246,28 @@ python -m src.cli compare-fusions \
   --adversarial data/processed/keyword_challenge.tsv
 ```
 
-### 5. v0-v5 多数据集验证
+### 5. 统一评测协议
+
+后续所有模型都应优先跑这条命令。它固定了四类协议：主数据集、zero-shot 跨来源、few-shot 外部适配、对抗鲁棒性。
+
+```bash
+python -m src.cli validate-protocols \
+  --train-data data/processed/spam_message_20k.tsv \
+  --external-data fbs_mixed=data/processed/fbs_mixed_eval.tsv \
+  --external-data hf_chinese_spam_10000=data/processed/hf_chinese_spam_10000.tsv \
+  --external-data hf_chinese_conversation_spam=data/processed/hf_chinese_conversation_and_spam.tsv \
+  --challenge-data adversarial=data/processed/adversarial_eval.tsv \
+  --challenge-data keyword_challenge=data/processed/keyword_challenge.tsv \
+  --adapt-train-size 0.3
+```
+
+输出：
+
+- `docs/experiments/evaluation_protocol_results.csv`
+- `docs/experiments/evaluation_protocol_results.md`
+- `docs/experiments/evaluation_protocol_splits.csv`
+
+### 6. v0-v5 多数据集验证
 
 ```bash
 python -m src.cli validate-all-versions \
@@ -249,7 +279,7 @@ python -m src.cli validate-all-versions \
   --eval-data keyword_challenge=data/processed/keyword_challenge.tsv
 ```
 
-### 6. v6/v7 跨来源适配实验
+### 7. v6/v7 跨来源适配实验
 
 默认版本使用每个外部二分类数据集的 30% 作为适配训练数据，70% 作为外部 holdout。
 
@@ -281,6 +311,138 @@ python -m src.cli validate-domain-adaptation \
 ```
 
 将 `--adapt-train-size 0.1` 改为 `0.2` 或 `0.3` 即可复现实验记录中的比例扫描。
+
+### 8. v8.0 语义编码实验
+
+v8.0 是去人工规则的新架构路线：不使用 `features/` 中的人工变体词表或特殊风险词匹配，只做通用文本归一化，然后使用冻结语义编码器提取向量并训练逻辑回归分类器。第一次运行会从 Hugging Face 下载模型权重。
+
+```bash
+python -m src.cli validate-semantic-v8 \
+  --train-data data/processed/spam_message_20k.tsv \
+  --external-data fbs_mixed=data/processed/fbs_mixed_eval.tsv \
+  --external-data hf_chinese_spam_10000=data/processed/hf_chinese_spam_10000.tsv \
+  --external-data hf_chinese_conversation_spam=data/processed/hf_chinese_conversation_and_spam.tsv \
+  --challenge-data adversarial=data/processed/adversarial_eval.tsv \
+  --challenge-data keyword_challenge=data/processed/keyword_challenge.tsv \
+  --model-name BAAI/bge-small-zh-v1.5 \
+  --batch-size 64 \
+  --adapt-train-size 0.3
+```
+
+输出：
+
+- `docs/experiments/semantic_v8_protocol_results.csv`
+- `docs/experiments/semantic_v8_protocol_results.md`
+- `docs/experiments/semantic_v8_protocol_splits.csv`
+
+### 9. v8.1 评测诊断与校准
+
+v8.1 不改变 v8.0 模型，只分析当前阈值、oracle 阈值、PR 曲线和分数分布，用于判断下一步该做阈值校准、编码器对比还是监督微调。
+
+```bash
+python -m src.cli diagnose-semantic-v8 \
+  --train-data data/processed/spam_message_20k.tsv \
+  --external-data fbs_mixed=data/processed/fbs_mixed_eval.tsv \
+  --external-data hf_chinese_spam_10000=data/processed/hf_chinese_spam_10000.tsv \
+  --external-data hf_chinese_conversation_spam=data/processed/hf_chinese_conversation_and_spam.tsv \
+  --challenge-data adversarial=data/processed/adversarial_eval.tsv \
+  --challenge-data keyword_challenge=data/processed/keyword_challenge.tsv \
+  --model-name BAAI/bge-small-zh-v1.5 \
+  --batch-size 64 \
+  --adapt-train-size 0.3
+```
+
+输出：
+
+- `docs/experiments/semantic_v8_calibration_diagnostics.md`
+- `docs/experiments/semantic_v8_calibration_diagnostics.csv`
+- `docs/experiments/semantic_v8_threshold_grid.csv`
+- `docs/experiments/semantic_v8_score_samples.csv`
+- `docs/experiments/semantic_v8_pr_curve.csv`
+- `docs/figures/semantic_v8_threshold_gain.svg`
+- `docs/figures/semantic_v8_score_distribution.svg`
+
+### 10. v8.2 编码器对比
+
+v8.2 固定 v8 的训练方式和 A/B/C/D 协议，只替换冻结语义编码器。默认对比 `bge_small_zh`、`multilingual_minilm` 和 `m3e_small`。
+
+```bash
+python -m src.cli compare-semantic-encoders-v8 \
+  --train-data data/processed/spam_message_20k.tsv \
+  --external-data fbs_mixed=data/processed/fbs_mixed_eval.tsv \
+  --external-data hf_chinese_spam_10000=data/processed/hf_chinese_spam_10000.tsv \
+  --external-data hf_chinese_conversation_spam=data/processed/hf_chinese_conversation_and_spam.tsv \
+  --challenge-data adversarial=data/processed/adversarial_eval.tsv \
+  --challenge-data keyword_challenge=data/processed/keyword_challenge.tsv \
+  --batch-size 64 \
+  --adapt-train-size 0.3
+```
+
+也可以手动指定 encoder：
+
+```bash
+python -m src.cli compare-semantic-encoders-v8 \
+  --train-data data/processed/spam_message_20k.tsv \
+  --encoder bge=BAAI/bge-small-zh-v1.5 \
+  --encoder minilm=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+```
+
+输出：
+
+- `docs/experiments/semantic_v8_encoder_comparison.csv`
+- `docs/experiments/semantic_v8_encoder_comparison.md`
+- `docs/experiments/semantic_v8_encoder_errors.csv`
+- `docs/figures/semantic_v8_encoder_comparison.svg`
+
+### 11. v8.3a 轻量自动 hard-case 增强
+
+v8.3a 不使用人工垃圾词表，从训练 split 自动挖掘 spam 高风险短 n-gram，并生成轻量 hard positive 样本。默认参数是 `max_terms=80`、`max_augmented=200`、`min_spam_df=3`。
+
+```bash
+python -m src.cli compare-semantic-autoaug-v8 \
+  --train-data data/processed/spam_message_20k.tsv \
+  --external-data fbs_mixed=data/processed/fbs_mixed_eval.tsv \
+  --external-data hf_chinese_spam_10000=data/processed/hf_chinese_spam_10000.tsv \
+  --external-data hf_chinese_conversation_spam=data/processed/hf_chinese_conversation_and_spam.tsv \
+  --challenge-data adversarial=data/processed/adversarial_eval.tsv \
+  --challenge-data keyword_challenge=data/processed/keyword_challenge.tsv \
+  --model-name BAAI/bge-small-zh-v1.5 \
+  --batch-size 64 \
+  --adapt-train-size 0.3
+```
+
+输出：
+
+- `docs/experiments/semantic_v8_autoaug_results.csv`
+- `docs/experiments/semantic_v8_autoaug_results.md`
+- `docs/experiments/semantic_v8_autoaug_terms.csv`
+- `docs/experiments/semantic_v8_autoaug_examples.csv`
+- `docs/figures/semantic_v8_autoaug_delta.svg`
+
+### 12. v8.3b 筛选增强 + hard negative
+
+v8.3b 保留 v8.3a 的自动 hard positive 生成，但会过滤过易或过激进的增强正样本，并加入高风险正常文本作为 hard negative。默认参数是 `positive_max_score=0.75`、`max_hard_negatives=200`。
+
+```bash
+python -m src.cli compare-semantic-filtered-autoaug-v8 \
+  --train-data data/processed/spam_message_20k.tsv \
+  --external-data fbs_mixed=data/processed/fbs_mixed_eval.tsv \
+  --external-data hf_chinese_spam_10000=data/processed/hf_chinese_spam_10000.tsv \
+  --external-data hf_chinese_conversation_spam=data/processed/hf_chinese_conversation_and_spam.tsv \
+  --challenge-data adversarial=data/processed/adversarial_eval.tsv \
+  --challenge-data keyword_challenge=data/processed/keyword_challenge.tsv \
+  --model-name BAAI/bge-small-zh-v1.5 \
+  --batch-size 64 \
+  --adapt-train-size 0.3
+```
+
+输出：
+
+- `docs/experiments/semantic_v8_autoaug_filtered_results.csv`
+- `docs/experiments/semantic_v8_autoaug_filtered_results.md`
+- `docs/experiments/semantic_v8_autoaug_filtered_terms.csv`
+- `docs/experiments/semantic_v8_autoaug_filtered_examples.csv`
+- `docs/figures/semantic_v8_autoaug_filtered_delta.svg`
 
 ## 训练与预测
 
@@ -337,7 +499,15 @@ hf auth login
 
 确认 `data/raw/` 和 `data/processed/` 下的数据已经按 README 生成。大数据文件默认不进入 Git，因此 clone 仓库后通常需要重新准备数据。
 
-### 4. Windows 路径或激活命令不同
+### 4. v8.0 首次运行下载模型较慢
+
+`sentence-transformers` 会下载 `--model-name` 指定的模型。网络不稳定时可以先单独确认 Hugging Face 能访问，或在上面的 v8.0 命令中把模型名改成更小的多语种模型：
+
+```bash
+--model-name sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+```
+
+### 5. Windows 路径或激活命令不同
 
 Windows 下建议使用 PowerShell，并把 README 中的 `python` 命令保持不变；只要虚拟环境已激活，`python` 会指向 `.venv`。
 

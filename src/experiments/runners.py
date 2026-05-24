@@ -739,6 +739,106 @@ def write_domain_adaptation_markdown(
     Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def write_evaluation_protocol_markdown(
+    results: pd.DataFrame,
+    split_summary: pd.DataFrame,
+    output_path: str | Path,
+    title: str = "统一评测协议结果",
+    intro: str = "本实验把旧模型 v0-v7 放入统一评测协议，后续 v8 语义模型也应接入同一协议。",
+) -> None:
+    best_rows = (
+        results.sort_values(
+            by=["protocol_id", "dataset", "f1_spam", "accuracy", "recall_spam"],
+            ascending=[True, True, False, False, False],
+        )
+        .groupby(["protocol_id", "dataset"], sort=False)
+        .head(1)
+    )
+    best_table = best_rows[
+        [
+            "protocol_id",
+            "dataset",
+            "model_version",
+            "training_scope",
+            "accuracy",
+            "precision_spam",
+            "recall_spam",
+            "f1_spam",
+            "false_positive",
+            "false_negative",
+        ]
+    ].copy().map(_format_metric)
+
+    full_columns = [
+        "protocol_id",
+        "protocol_name",
+        "dataset",
+        "model_version",
+        "training_scope",
+        "n_samples",
+        "n_normal",
+        "n_spam",
+        "accuracy",
+        "precision_spam",
+        "recall_spam",
+        "f1_spam",
+        "false_positive",
+        "false_negative",
+    ]
+    if "encoder" in results.columns:
+        full_columns.insert(5, "encoder")
+    full_table = results[full_columns].copy().map(_format_metric)
+    split_table = split_summary.copy().map(_format_metric)
+
+    lines = [
+        f"# {title}",
+        "",
+        intro,
+        "",
+        "## 协议定义",
+        "",
+        "| 协议 | 名称 | 训练数据 | 测试数据 | 目的 |",
+        "|---|---|---|---|---|",
+        "| A | In-domain | 主数据 train | 主数据 holdout | 衡量课程主任务表现 |",
+        "| B | Zero-shot cross-domain | 只用主数据 train | 外部 holdout | 衡量裸泛化能力 |",
+        "| C | Few-shot domain adaptation | 主数据 + 外部 adapt train | 外部 holdout | 衡量少量外部标注后的泛化 |",
+        "| D | Adversarial robustness | 对应模型训练数据 | adversarial / keyword challenge | 衡量变体鲁棒性 |",
+        "",
+        "## 外部数据切分",
+        "",
+        "| " + " | ".join(split_table.columns) + " |",
+        "| " + " | ".join(["---"] * len(split_table.columns)) + " |",
+    ]
+    for _, row in split_table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    lines.extend(
+        [
+            "",
+            "## 每个协议与数据集的最优结果",
+            "",
+            "| " + " | ".join(best_table.columns) + " |",
+            "| " + " | ".join(["---"] * len(best_table.columns)) + " |",
+        ]
+    )
+    for _, row in best_table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    lines.extend(
+        [
+            "",
+            "## 完整结果",
+            "",
+            "| " + " | ".join(full_table.columns) + " |",
+            "| " + " | ".join(["---"] * len(full_table.columns)) + " |",
+        ]
+    )
+    for _, row in full_table.iterrows():
+        lines.append("| " + " | ".join(row.astype(str).tolist()) + " |")
+
+    Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def compare_baselines(
     data_path: str | Path,
     output_csv: str | Path = "docs/experiments/baseline_comparison.csv",
@@ -1669,4 +1769,371 @@ def compare_domain_adaptation_validation(
         selected_threshold=selected_threshold,
         bridge_threshold=bridge_threshold,
     )
+    return results
+
+
+def compare_evaluation_protocols(
+    train_data_path: str | Path,
+    external_data_paths: Sequence[tuple[str, str | Path]],
+    challenge_data_paths: Sequence[tuple[str, str | Path]] = (),
+    output_csv: str | Path = "docs/experiments/evaluation_protocol_results.csv",
+    output_md: str | Path = "docs/experiments/evaluation_protocol_results.md",
+    split_csv: str | Path = "docs/experiments/evaluation_protocol_splits.csv",
+    test_size: float = 0.3,
+    validation_size: float = 0.2,
+    adapt_train_size: float = 0.3,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """Run v0-v7 through fixed evaluation protocols A/B/C/D."""
+    if not 0 < adapt_train_size < 1:
+        raise ValueError("adapt_train_size must be between 0 and 1.")
+
+    main_data = read_dataset(train_data_path)
+    main_stratify = main_data["label"] if main_data["label"].nunique() > 1 else None
+    main_train_x, main_holdout_x, main_train_y, main_holdout_y = train_test_split(
+        main_data["text"],
+        main_data["label"],
+        test_size=test_size,
+        random_state=random_state,
+        stratify=main_stratify,
+    )
+    valid_stratify = main_train_y if main_train_y.nunique() > 1 else None
+    main_fit_x, main_valid_x, main_fit_y, main_valid_y = train_test_split(
+        main_train_x,
+        main_train_y,
+        test_size=validation_size,
+        random_state=random_state,
+        stratify=valid_stratify,
+    )
+
+    external_holdouts: list[tuple[str, str, pd.Series, pd.Series]] = []
+    adapt_train_x_parts: list[pd.Series] = []
+    adapt_train_y_parts: list[pd.Series] = []
+    adapt_fit_x_parts: list[pd.Series] = []
+    adapt_fit_y_parts: list[pd.Series] = []
+    adapt_valid_x_parts: list[pd.Series] = []
+    adapt_valid_y_parts: list[pd.Series] = []
+    split_rows: list[dict[str, object]] = []
+
+    for name, path in external_data_paths:
+        data = read_dataset(path)
+        stratify = data["label"] if data["label"].nunique() > 1 else None
+        adapt_train, holdout = train_test_split(
+            data,
+            train_size=adapt_train_size,
+            random_state=random_state,
+            stratify=stratify,
+        )
+        adapt_stratify = adapt_train["label"] if adapt_train["label"].nunique() > 1 else None
+        adapt_fit, adapt_valid = train_test_split(
+            adapt_train,
+            test_size=validation_size,
+            random_state=random_state,
+            stratify=adapt_stratify,
+        )
+
+        adapt_train_x_parts.append(adapt_train["text"].reset_index(drop=True))
+        adapt_train_y_parts.append(adapt_train["label"].reset_index(drop=True))
+        adapt_fit_x_parts.append(adapt_fit["text"].reset_index(drop=True))
+        adapt_fit_y_parts.append(adapt_fit["label"].reset_index(drop=True))
+        adapt_valid_x_parts.append(adapt_valid["text"].reset_index(drop=True))
+        adapt_valid_y_parts.append(adapt_valid["label"].reset_index(drop=True))
+        external_holdouts.append(
+            (
+                f"{name}_holdout",
+                str(path),
+                holdout["text"].reset_index(drop=True),
+                holdout["label"].reset_index(drop=True),
+            )
+        )
+        split_rows.append(
+            {
+                "dataset": name,
+                "total_rows": int(len(data)),
+                "adapt_train_rows": int(len(adapt_train)),
+                "adapt_fit_rows": int(len(adapt_fit)),
+                "adapt_valid_rows": int(len(adapt_valid)),
+                "holdout_rows": int(len(holdout)),
+                "holdout_spam": int((holdout["label"] == 1).sum()),
+                "holdout_normal": int((holdout["label"] == 0).sum()),
+            }
+        )
+
+    challenge_sets: list[tuple[str, str, pd.Series, pd.Series]] = []
+    for name, path in challenge_data_paths:
+        data = read_dataset(path)
+        challenge_sets.append(
+            (
+                name,
+                str(path),
+                data["text"].reset_index(drop=True),
+                data["label"].reset_index(drop=True),
+            )
+        )
+
+    main_tuning_baseline, main_tuning_csn = _train_baseline_and_csn(main_fit_x, main_fit_y)
+    main_validation_grid = _search_max_fusion_threshold(
+        main_tuning_baseline,
+        main_tuning_csn,
+        main_valid_x,
+        main_valid_y,
+    )
+    main_selected = _select_best_fusion_threshold(main_validation_grid)
+    main_bonus = float(main_selected["risk_bonus"])
+    main_threshold = float(main_selected["threshold"])
+
+    v0_model = build_pipeline(analyzer="char", classifier="logreg")
+    v0_model.fit(main_train_x, main_train_y)
+
+    v1_model = build_pipeline(analyzer="char", classifier="linear_svm")
+    v1_model.fit(main_train_x, main_train_y)
+
+    v2_model = build_pipeline(analyzer="char_csn", classifier="linear_svm")
+    v2_model.fit(main_train_x, main_train_y)
+
+    v3_model = build_pipeline(analyzer="char_csn", classifier="linear_svm")
+    v3_fit_x, v3_fit_y = _with_keyword_augmentation(main_train_x, main_train_y)
+    v3_model.fit(v3_fit_x, v3_fit_y)
+
+    multisource_train_x = pd.concat([main_train_x.reset_index(drop=True), *adapt_train_x_parts], ignore_index=True)
+    multisource_train_y = pd.concat([main_train_y.reset_index(drop=True), *adapt_train_y_parts], ignore_index=True)
+    multisource_fit_x = pd.concat([main_fit_x.reset_index(drop=True), *adapt_fit_x_parts], ignore_index=True)
+    multisource_fit_y = pd.concat([main_fit_y.reset_index(drop=True), *adapt_fit_y_parts], ignore_index=True)
+    multisource_valid_x = pd.concat([main_valid_x.reset_index(drop=True), *adapt_valid_x_parts], ignore_index=True)
+    multisource_valid_y = pd.concat([main_valid_y.reset_index(drop=True), *adapt_valid_y_parts], ignore_index=True)
+
+    tuning_baseline, tuning_csn = _train_baseline_and_csn(multisource_fit_x, multisource_fit_y)
+    validation_grid = _search_max_fusion_threshold(
+        tuning_baseline,
+        tuning_csn,
+        multisource_valid_x,
+        multisource_valid_y,
+    )
+    selected = _select_best_fusion_threshold(validation_grid)
+    selected_bonus = float(selected["risk_bonus"])
+    selected_threshold = float(selected["threshold"])
+
+    v6_baseline, v6_csn = _train_baseline_and_csn(multisource_train_x, multisource_train_y)
+
+    main_valid_bridge_scores = _max_fusion_scores(
+        main_tuning_baseline,
+        main_tuning_csn,
+        multisource_valid_x,
+        main_bonus,
+    )
+    multi_valid_bridge_scores = _max_fusion_scores(
+        tuning_baseline,
+        tuning_csn,
+        multisource_valid_x,
+        selected_bonus,
+    )
+    bridge_validation_grid = _search_score_threshold(
+        np.maximum(main_valid_bridge_scores, multi_valid_bridge_scores),
+        multisource_valid_y,
+    )
+    bridge_selected = _select_best_fusion_threshold(bridge_validation_grid)
+    bridge_threshold = float(bridge_selected["threshold"])
+
+    rows: list[dict[str, object]] = []
+
+    def configs_for(texts) -> tuple[dict[str, object], ...]:
+        risk_scores = np.asarray(spam_risk_scores(texts), dtype=float)
+        v0_scores = np.asarray(score_texts(v0_model, texts), dtype=float)
+        v1_scores = np.asarray(score_texts(v1_model, texts), dtype=float)
+        v2_scores = np.asarray(score_texts(v2_model, texts), dtype=float)
+        v3_scores = np.asarray(score_texts(v3_model, texts), dtype=float)
+        v6_baseline_scores = np.asarray(score_texts(v6_baseline, texts), dtype=float)
+        v6_csn_scores = np.asarray(score_texts(v6_csn, texts), dtype=float)
+        v5_scores = np.maximum(v1_scores, v3_scores) + main_bonus * risk_scores
+        v6_fusion_scores = np.maximum(v6_baseline_scores, v6_csn_scores) + selected_bonus * risk_scores
+        v7_scores = np.maximum(v5_scores, v6_fusion_scores)
+        return (
+            {
+                "model_version": "v0_char_logreg",
+                "training_scope": "main_only",
+                "description": "字符级 TF-IDF + Logistic Regression",
+                "scores": v0_scores,
+                "risk_bonus": 0.0,
+                "threshold": 0.5,
+            },
+            {
+                "model_version": "v1_char_svm",
+                "training_scope": "main_only",
+                "description": "字符级 TF-IDF + Linear SVM",
+                "scores": v1_scores,
+                "risk_bonus": 0.0,
+                "threshold": 0.0,
+            },
+            {
+                "model_version": "v2_csn_svm",
+                "training_scope": "main_only",
+                "description": "CSN 归一化 + Linear SVM",
+                "scores": v2_scores,
+                "risk_bonus": 0.0,
+                "threshold": 0.0,
+            },
+            {
+                "model_version": "v3_csn_aug",
+                "training_scope": "main_only",
+                "description": "CSN 归一化 + 关键词增强",
+                "scores": v3_scores,
+                "risk_bonus": 0.0,
+                "threshold": 0.0,
+            },
+            {
+                "model_version": "v4_bad_case",
+                "training_scope": "main_only",
+                "description": "v3 + bad-case 风险分数 + 固定阈值",
+                "scores": v3_scores + V4_RISK_BONUS * risk_scores,
+                "risk_bonus": V4_RISK_BONUS,
+                "threshold": V4_THRESHOLD,
+            },
+            {
+                "model_version": "v5_main_fusion",
+                "training_scope": "main_only",
+                "description": "主数据 v5 max-score 分数融合",
+                "scores": v5_scores,
+                "risk_bonus": main_bonus,
+                "threshold": main_threshold,
+            },
+            {
+                "model_version": "v6_csn_multisource",
+                "training_scope": "main_plus_external_adapt",
+                "description": "多来源训练 CSN 关键词增强",
+                "scores": v6_csn_scores,
+                "risk_bonus": 0.0,
+                "threshold": 0.0,
+            },
+            {
+                "model_version": "v6_fusion_multisource",
+                "training_scope": "main_plus_external_adapt",
+                "description": "多来源训练 max-score 分数融合",
+                "scores": v6_fusion_scores,
+                "risk_bonus": selected_bonus,
+                "threshold": selected_threshold,
+            },
+            {
+                "model_version": "v7_bridge",
+                "training_scope": "main_plus_external_adapt",
+                "description": "v5 主数据模型与 v6 多来源模型桥接",
+                "scores": v7_scores,
+                "risk_bonus": 0.0,
+                "threshold": bridge_threshold,
+            },
+        )
+
+    def add_eval_rows(
+        protocol_id: str,
+        protocol_name: str,
+        dataset_name: str,
+        dataset_type: str,
+        source_path: str,
+        texts: pd.Series,
+        labels: pd.Series,
+        allowed_versions: set[str],
+    ) -> None:
+        counts = labels.value_counts().to_dict()
+        for config in configs_for(texts):
+            version = str(config["model_version"])
+            if version not in allowed_versions:
+                continue
+            metrics = _evaluate_threshold(
+                labels,
+                np.asarray(config["scores"], dtype=float),
+                float(config["threshold"]),
+            )
+            rows.append(
+                {
+                    "protocol_id": protocol_id,
+                    "protocol_name": protocol_name,
+                    "dataset": dataset_name,
+                    "dataset_type": dataset_type,
+                    "source_path": source_path,
+                    "model_version": version,
+                    "training_scope": config["training_scope"],
+                    "description": config["description"],
+                    "risk_bonus": config["risk_bonus"],
+                    "threshold": config["threshold"],
+                    "n_samples": int(len(labels)),
+                    "n_normal": int(counts.get(0, 0)),
+                    "n_spam": int(counts.get(1, 0)),
+                    **metrics,
+                }
+            )
+
+    main_only_versions = {
+        "v0_char_logreg",
+        "v1_char_svm",
+        "v2_csn_svm",
+        "v3_csn_aug",
+        "v4_bad_case",
+        "v5_main_fusion",
+    }
+    adapted_versions = {
+        "v3_csn_aug",
+        "v5_main_fusion",
+        "v6_csn_multisource",
+        "v6_fusion_multisource",
+        "v7_bridge",
+    }
+    all_versions = main_only_versions | {
+        "v6_csn_multisource",
+        "v6_fusion_multisource",
+        "v7_bridge",
+    }
+
+    add_eval_rows(
+        "A",
+        "In-domain main holdout",
+        "main_holdout",
+        "binary",
+        str(train_data_path),
+        main_holdout_x.reset_index(drop=True),
+        main_holdout_y.reset_index(drop=True),
+        all_versions,
+    )
+    for dataset_name, source_path, texts, labels in external_holdouts:
+        add_eval_rows(
+            "B",
+            "Zero-shot cross-domain",
+            dataset_name,
+            "binary",
+            source_path,
+            texts,
+            labels,
+            main_only_versions,
+        )
+        add_eval_rows(
+            "C",
+            "Few-shot domain adaptation",
+            dataset_name,
+            "binary",
+            source_path,
+            texts,
+            labels,
+            adapted_versions,
+        )
+    for dataset_name, source_path, texts, labels in challenge_sets:
+        add_eval_rows(
+            "D",
+            "Adversarial robustness",
+            dataset_name,
+            "spam_only",
+            source_path,
+            texts,
+            labels,
+            all_versions,
+        )
+
+    results = pd.DataFrame(rows)
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    results.to_csv(output_csv, index=False)
+
+    split_summary = pd.DataFrame(split_rows)
+    split_output = Path(split_csv)
+    split_output.parent.mkdir(parents=True, exist_ok=True)
+    split_summary.to_csv(split_output, index=False)
+
+    write_evaluation_protocol_markdown(results, split_summary, output_md)
     return results
