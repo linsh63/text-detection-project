@@ -117,16 +117,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     compare_parser = subparsers.add_parser("compare-baselines", help="Run baseline comparison")
     compare_parser.add_argument("--data", required=True)
-    compare_parser.add_argument("--out-csv", default="docs/experiments/baseline_comparison.csv")
-    compare_parser.add_argument("--out-md", default="docs/experiments/baseline_comparison.md")
+    compare_parser.add_argument("--out-csv", default="docs/experiments/classic/baseline_comparison.csv")
+    compare_parser.add_argument("--out-md", default="docs/experiments/classic/baseline_comparison.md")
     compare_parser.add_argument("--test-size", type=float, default=0.3)
     compare_parser.add_argument("--random-state", type=int, default=42)
 
     csn_parser = subparsers.add_parser("compare-csn", help="Compare CSN optimization")
     csn_parser.add_argument("--data", required=True)
     csn_parser.add_argument("--adversarial", required=True)
-    csn_parser.add_argument("--out-csv", default="docs/experiments/csn_comparison.csv")
-    csn_parser.add_argument("--out-md", default="docs/experiments/csn_comparison.md")
+    csn_parser.add_argument("--out-csv", default="docs/experiments/classic/csn_comparison.csv")
+    csn_parser.add_argument("--out-md", default="docs/experiments/classic/csn_comparison.md")
     csn_parser.add_argument("--test-size", type=float, default=0.3)
     csn_parser.add_argument("--random-state", type=int, default=42)
 
@@ -136,9 +136,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     bad_case_parser.add_argument("--data", required=True)
     bad_case_parser.add_argument("--adversarial", required=True)
-    bad_case_parser.add_argument("--out-csv", default="docs/experiments/bad_case_optimization.csv")
-    bad_case_parser.add_argument("--out-md", default="docs/experiments/bad_case_optimization.md")
-    bad_case_parser.add_argument("--grid-csv", default="docs/experiments/bad_case_tuning_grid.csv")
+    bad_case_parser.add_argument("--out-csv", default="docs/experiments/classic/bad_case_optimization.csv")
+    bad_case_parser.add_argument("--out-md", default="docs/experiments/classic/bad_case_optimization.md")
+    bad_case_parser.add_argument("--grid-csv", default="docs/experiments/classic/bad_case_tuning_grid.csv")
     bad_case_parser.add_argument("--test-size", type=float, default=0.3)
     bad_case_parser.add_argument("--validation-size", type=float, default=0.2)
     bad_case_parser.add_argument("--random-state", type=int, default=42)
@@ -147,9 +147,9 @@ def build_parser() -> argparse.ArgumentParser:
         "plot-comparison",
         help="Generate report-ready model comparison figure and summary",
     )
-    plot_parser.add_argument("--input", default="docs/experiments/bad_case_optimization.csv")
-    plot_parser.add_argument("--out-svg", default="docs/figures/model_comparison.svg")
-    plot_parser.add_argument("--out-md", default="docs/reports/report_summary.md")
+    plot_parser.add_argument("--input", default="docs/experiments/classic/bad_case_optimization.csv")
+    plot_parser.add_argument("--out-svg", default="docs/figures/classic/model_comparison.svg")
+    plot_parser.add_argument("--out-md", default="docs/reports/summary/report_summary.md")
 
     fusion_parser = subparsers.add_parser(
         "compare-fusions",
@@ -157,9 +157,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     fusion_parser.add_argument("--data", required=True)
     fusion_parser.add_argument("--adversarial", required=True)
-    fusion_parser.add_argument("--out-csv", default="docs/experiments/fusion_experiment.csv")
-    fusion_parser.add_argument("--out-md", default="docs/experiments/fusion_experiment.md")
-    fusion_parser.add_argument("--stability-csv", default="docs/experiments/fusion_stability.csv")
+    fusion_parser.add_argument("--out-csv", default="docs/experiments/classic/fusion_experiment.csv")
+    fusion_parser.add_argument("--out-md", default="docs/experiments/classic/fusion_experiment.md")
+    fusion_parser.add_argument("--stability-csv", default="docs/experiments/classic/fusion_stability.csv")
     fusion_parser.add_argument("--test-size", type=float, default=0.3)
     fusion_parser.add_argument("--validation-size", type=float, default=0.2)
     fusion_parser.add_argument("--random-state", type=int, default=42)
@@ -177,11 +177,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     multidata_parser.add_argument(
         "--out-csv",
-        default="docs/experiments/multidataset_fusion_validation.csv",
+        default="docs/experiments/multidataset/multidataset_fusion_validation.csv",
     )
     multidata_parser.add_argument(
         "--out-md",
-        default="docs/experiments/multidataset_fusion_validation.md",
+        default="docs/experiments/multidataset/multidataset_fusion_validation.md",
     )
     multidata_parser.add_argument("--test-size", type=float, default=0.3)
     multidata_parser.add_argument("--validation-size", type=float, default=0.2)
@@ -200,11 +200,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     all_versions_parser.add_argument(
         "--out-csv",
-        default="docs/experiments/all_versions_multidataset_validation.csv",
+        default="docs/experiments/multidataset/all_versions_multidataset_validation.csv",
     )
     all_versions_parser.add_argument(
         "--out-md",
-        default="docs/experiments/all_versions_multidataset_validation.md",
+        default="docs/experiments/multidataset/all_versions_multidataset_validation.md",
     )
     all_versions_parser.add_argument("--test-size", type=float, default=0.3)
     all_versions_parser.add_argument("--validation-size", type=float, default=0.2)
@@ -229,15 +229,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     adaptation_parser.add_argument(
         "--out-csv",
-        default="docs/experiments/domain_adaptation_validation.csv",
+        default="docs/experiments/domain_adaptation/domain_adaptation_validation.csv",
     )
     adaptation_parser.add_argument(
         "--out-md",
-        default="docs/experiments/domain_adaptation_validation.md",
+        default="docs/experiments/domain_adaptation/domain_adaptation_validation.md",
     )
     adaptation_parser.add_argument(
         "--split-csv",
-        default="docs/experiments/domain_adaptation_splits.csv",
+        default="docs/experiments/domain_adaptation/domain_adaptation_splits.csv",
     )
     adaptation_parser.add_argument("--test-size", type=float, default=0.3)
     adaptation_parser.add_argument("--validation-size", type=float, default=0.2)
@@ -263,15 +263,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     protocol_parser.add_argument(
         "--out-csv",
-        default="docs/experiments/evaluation_protocol_results.csv",
+        default="docs/experiments/multidataset/evaluation_protocol_results.csv",
     )
     protocol_parser.add_argument(
         "--out-md",
-        default="docs/experiments/evaluation_protocol_results.md",
+        default="docs/experiments/multidataset/evaluation_protocol_results.md",
     )
     protocol_parser.add_argument(
         "--split-csv",
-        default="docs/experiments/evaluation_protocol_splits.csv",
+        default="docs/experiments/multidataset/evaluation_protocol_splits.csv",
     )
     protocol_parser.add_argument("--test-size", type=float, default=0.3)
     protocol_parser.add_argument("--validation-size", type=float, default=0.2)
@@ -300,15 +300,15 @@ def build_parser() -> argparse.ArgumentParser:
     semantic_parser.add_argument("--device")
     semantic_parser.add_argument(
         "--out-csv",
-        default="docs/experiments/semantic_v8_protocol_results.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_protocol_results.csv",
     )
     semantic_parser.add_argument(
         "--out-md",
-        default="docs/experiments/semantic_v8_protocol_results.md",
+        default="docs/experiments/semantic_v8/semantic_v8_protocol_results.md",
     )
     semantic_parser.add_argument(
         "--split-csv",
-        default="docs/experiments/semantic_v8_protocol_splits.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_protocol_splits.csv",
     )
     semantic_parser.add_argument("--test-size", type=float, default=0.3)
     semantic_parser.add_argument("--validation-size", type=float, default=0.2)
@@ -337,31 +337,31 @@ def build_parser() -> argparse.ArgumentParser:
     semantic_diagnostics_parser.add_argument("--device")
     semantic_diagnostics_parser.add_argument(
         "--diagnostics-csv",
-        default="docs/experiments/semantic_v8_calibration_diagnostics.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_calibration_diagnostics.csv",
     )
     semantic_diagnostics_parser.add_argument(
         "--threshold-grid-csv",
-        default="docs/experiments/semantic_v8_threshold_grid.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_threshold_grid.csv",
     )
     semantic_diagnostics_parser.add_argument(
         "--score-samples-csv",
-        default="docs/experiments/semantic_v8_score_samples.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_score_samples.csv",
     )
     semantic_diagnostics_parser.add_argument(
         "--pr-curve-csv",
-        default="docs/experiments/semantic_v8_pr_curve.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_pr_curve.csv",
     )
     semantic_diagnostics_parser.add_argument(
         "--out-md",
-        default="docs/experiments/semantic_v8_calibration_diagnostics.md",
+        default="docs/experiments/semantic_v8/semantic_v8_calibration_diagnostics.md",
     )
     semantic_diagnostics_parser.add_argument(
         "--threshold-figure",
-        default="docs/figures/semantic_v8_threshold_gain.svg",
+        default="docs/figures/semantic_v8/semantic_v8_threshold_gain.svg",
     )
     semantic_diagnostics_parser.add_argument(
         "--score-figure",
-        default="docs/figures/semantic_v8_score_distribution.svg",
+        default="docs/figures/semantic_v8/semantic_v8_score_distribution.svg",
     )
     semantic_diagnostics_parser.add_argument("--test-size", type=float, default=0.3)
     semantic_diagnostics_parser.add_argument("--validation-size", type=float, default=0.2)
@@ -398,19 +398,19 @@ def build_parser() -> argparse.ArgumentParser:
     semantic_encoder_parser.add_argument("--device")
     semantic_encoder_parser.add_argument(
         "--out-csv",
-        default="docs/experiments/semantic_v8_encoder_comparison.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_encoder_comparison.csv",
     )
     semantic_encoder_parser.add_argument(
         "--out-md",
-        default="docs/experiments/semantic_v8_encoder_comparison.md",
+        default="docs/experiments/semantic_v8/semantic_v8_encoder_comparison.md",
     )
     semantic_encoder_parser.add_argument(
         "--error-csv",
-        default="docs/experiments/semantic_v8_encoder_errors.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_encoder_errors.csv",
     )
     semantic_encoder_parser.add_argument(
         "--figure",
-        default="docs/figures/semantic_v8_encoder_comparison.svg",
+        default="docs/figures/semantic_v8/semantic_v8_encoder_comparison.svg",
     )
     semantic_encoder_parser.add_argument("--test-size", type=float, default=0.3)
     semantic_encoder_parser.add_argument("--validation-size", type=float, default=0.2)
@@ -444,23 +444,23 @@ def build_parser() -> argparse.ArgumentParser:
     semantic_autoaug_parser.add_argument("--device")
     semantic_autoaug_parser.add_argument(
         "--out-csv",
-        default="docs/experiments/semantic_v8_autoaug_results.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_autoaug_results.csv",
     )
     semantic_autoaug_parser.add_argument(
         "--out-md",
-        default="docs/experiments/semantic_v8_autoaug_results.md",
+        default="docs/experiments/semantic_v8/semantic_v8_autoaug_results.md",
     )
     semantic_autoaug_parser.add_argument(
         "--terms-csv",
-        default="docs/experiments/semantic_v8_autoaug_terms.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_autoaug_terms.csv",
     )
     semantic_autoaug_parser.add_argument(
         "--examples-csv",
-        default="docs/experiments/semantic_v8_autoaug_examples.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_autoaug_examples.csv",
     )
     semantic_autoaug_parser.add_argument(
         "--figure",
-        default="docs/figures/semantic_v8_autoaug_delta.svg",
+        default="docs/figures/semantic_v8/semantic_v8_autoaug_delta.svg",
     )
     semantic_autoaug_parser.add_argument("--test-size", type=float, default=0.3)
     semantic_autoaug_parser.add_argument("--validation-size", type=float, default=0.2)
@@ -492,23 +492,23 @@ def build_parser() -> argparse.ArgumentParser:
     semantic_filtered_autoaug_parser.add_argument("--device")
     semantic_filtered_autoaug_parser.add_argument(
         "--out-csv",
-        default="docs/experiments/semantic_v8_autoaug_filtered_results.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_autoaug_filtered_results.csv",
     )
     semantic_filtered_autoaug_parser.add_argument(
         "--out-md",
-        default="docs/experiments/semantic_v8_autoaug_filtered_results.md",
+        default="docs/experiments/semantic_v8/semantic_v8_autoaug_filtered_results.md",
     )
     semantic_filtered_autoaug_parser.add_argument(
         "--terms-csv",
-        default="docs/experiments/semantic_v8_autoaug_filtered_terms.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_autoaug_filtered_terms.csv",
     )
     semantic_filtered_autoaug_parser.add_argument(
         "--examples-csv",
-        default="docs/experiments/semantic_v8_autoaug_filtered_examples.csv",
+        default="docs/experiments/semantic_v8/semantic_v8_autoaug_filtered_examples.csv",
     )
     semantic_filtered_autoaug_parser.add_argument(
         "--figure",
-        default="docs/figures/semantic_v8_autoaug_filtered_delta.svg",
+        default="docs/figures/semantic_v8/semantic_v8_autoaug_filtered_delta.svg",
     )
     semantic_filtered_autoaug_parser.add_argument("--test-size", type=float, default=0.3)
     semantic_filtered_autoaug_parser.add_argument("--validation-size", type=float, default=0.2)

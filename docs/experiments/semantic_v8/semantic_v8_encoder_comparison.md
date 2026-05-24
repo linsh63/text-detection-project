@@ -2,7 +2,7 @@
 
 本实验固定 v8 的训练方式和 A/B/C/D 评测协议，仅替换冻结语义编码器，比较不同 encoder 对主数据集、外部 zero-shot、外部少量适配和 challenge 数据的影响。
 
-![v8.2 Encoder 对比](../figures/semantic_v8_encoder_comparison.svg)
+![v8.2 Encoder 对比](../../figures/semantic_v8/semantic_v8_encoder_comparison.svg)
 
 ## 每个协议/数据集的最优 Encoder
 

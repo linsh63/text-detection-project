@@ -2,7 +2,7 @@
 
 本实验不使用人工垃圾词表，从训练 split 自动挖掘 spam 相关短 n-gram，并基于分隔符、重复字符和训练语料中的同音字符生成 hard positive 样本。编码器和分类器仍沿用 v8：冻结语义编码器 + Logistic Regression。
 
-![v8.3a 自动增强效果](../figures/semantic_v8_autoaug_delta.svg)
+![v8.3a 自动增强效果](../../figures/semantic_v8/semantic_v8_autoaug_delta.svg)
 
 ## Baseline vs AutoAug
 

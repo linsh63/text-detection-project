@@ -9,9 +9,9 @@
 - 多来源适配后的 v8 表现明显提升，说明语义模型需要少量目标域标注来校准边界。
 - keyword challenge 仍是 v8.0 的短板，后续应做自动 hard-case 增强或监督微调。
 
-![v8.1 阈值校准诊断](../figures/semantic_v8_threshold_gain.svg)
+![v8.1 阈值校准诊断](../../figures/semantic_v8/semantic_v8_threshold_gain.svg)
 
-![v8.1 分数分布](../figures/semantic_v8_score_distribution.svg)
+![v8.1 分数分布](../../figures/semantic_v8/semantic_v8_score_distribution.svg)
 
 ## 核心表
 
@@ -32,12 +32,12 @@
 
 ## 输出文件
 
-- `docs/experiments/semantic_v8_calibration_diagnostics.md`：本页说明和核心诊断表
-- `docs/experiments/semantic_v8_threshold_grid.csv`：所有阈值扫描结果
-- `docs/experiments/semantic_v8_score_samples.csv`：逐样本分数、当前预测和错误类型
-- `docs/experiments/semantic_v8_pr_curve.csv`：PR 曲线采样点
-- `docs/figures/semantic_v8_threshold_gain.svg`：当前阈值 vs oracle 阈值 F1 对比图
-- `docs/figures/semantic_v8_score_distribution.svg`：main-only 分数分布图
+- `docs/experiments/semantic_v8/semantic_v8_calibration_diagnostics.md`：本页说明和核心诊断表
+- `docs/experiments/semantic_v8/semantic_v8_threshold_grid.csv`：所有阈值扫描结果
+- `docs/experiments/semantic_v8/semantic_v8_score_samples.csv`：逐样本分数、当前预测和错误类型
+- `docs/experiments/semantic_v8/semantic_v8_pr_curve.csv`：PR 曲线采样点
+- `docs/figures/semantic_v8/semantic_v8_threshold_gain.svg`：当前阈值 vs oracle 阈值 F1 对比图
+- `docs/figures/semantic_v8/semantic_v8_score_distribution.svg`：main-only 分数分布图
 
 ## 下一步
 

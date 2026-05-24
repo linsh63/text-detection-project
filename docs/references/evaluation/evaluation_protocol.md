@@ -88,9 +88,9 @@ python -m src.cli validate-protocols \
 
 输出文件：
 
-- `docs/experiments/evaluation_protocol_results.csv`
-- `docs/experiments/evaluation_protocol_results.md`
-- `docs/experiments/evaluation_protocol_splits.csv`
+- `docs/experiments/multidataset/evaluation_protocol_results.csv`
+- `docs/experiments/multidataset/evaluation_protocol_results.md`
+- `docs/experiments/multidataset/evaluation_protocol_splits.csv`
 
 ## v8 接入要求
 

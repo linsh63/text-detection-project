@@ -148,8 +148,8 @@ def _panel_svg(
 
 
 def generate_model_comparison_svg(
-    input_csv: str | Path = "docs/experiments/bad_case_optimization.csv",
-    output_svg: str | Path = "docs/figures/model_comparison.svg",
+    input_csv: str | Path = "docs/experiments/classic/bad_case_optimization.csv",
+    output_svg: str | Path = "docs/figures/classic/model_comparison.svg",
 ) -> Path:
     """Create a four-panel SVG comparing v1, v3 and v4."""
     data = _load_chart_data(input_csv)
@@ -200,9 +200,9 @@ def generate_model_comparison_svg(
 
 
 def write_report_summary(
-    input_csv: str | Path = "docs/experiments/bad_case_optimization.csv",
-    figure_path: str | Path = "docs/figures/model_comparison.svg",
-    output_md: str | Path = "docs/reports/report_summary.md",
+    input_csv: str | Path = "docs/experiments/classic/bad_case_optimization.csv",
+    figure_path: str | Path = "docs/figures/classic/model_comparison.svg",
+    output_md: str | Path = "docs/reports/summary/report_summary.md",
 ) -> Path:
     """Write a concise report-ready experiment summary."""
     data = _load_chart_data(input_csv).set_index("name")
@@ -256,9 +256,9 @@ def write_report_summary(
 
 
 def generate_report_assets(
-    input_csv: str | Path = "docs/experiments/bad_case_optimization.csv",
-    output_svg: str | Path = "docs/figures/model_comparison.svg",
-    output_md: str | Path = "docs/reports/report_summary.md",
+    input_csv: str | Path = "docs/experiments/classic/bad_case_optimization.csv",
+    output_svg: str | Path = "docs/figures/classic/model_comparison.svg",
+    output_md: str | Path = "docs/reports/summary/report_summary.md",
 ) -> tuple[Path, Path]:
     figure = generate_model_comparison_svg(input_csv=input_csv, output_svg=output_svg)
     summary = write_report_summary(input_csv=input_csv, figure_path=figure, output_md=output_md)

@@ -2,7 +2,7 @@
 
 本实验保留 v8.3a 的自动 hard positive 生成，但用原始语义模型分数过滤过易或过激进的增强样本，同时把高风险正常样本和其自动变体作为 hard negative 加回训练。目标是在保持 keyword challenge 收益的同时，减少 HF conversation 等跨域正常文本被误判为 spam 的副作用。当前正式默认参数为 `positive_min_score=0.05`、`positive_max_score=0.75`、`max_hard_negatives=200`。
 
-![v8.3b 筛选增强 + Hard Negative](../figures/semantic_v8_autoaug_filtered_delta.svg)
+![v8.3b 筛选增强 + Hard Negative](../../figures/semantic_v8/semantic_v8_autoaug_filtered_delta.svg)
 
 ## Baseline vs AutoAug
 
