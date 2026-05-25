@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1020" height="620" viewBox="0 0 1020 620" role="img" aria-label="TF-IDF SVM accuracy across datasets">
+  <rect width="1020" height="620" fill="#F6F8FB"/>
+  <text x="48" y="54" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="26" font-weight="800" fill="#172033">TF-IDF+SVM 在不同数据集上的 Accuracy</text>
+  <text x="48" y="82" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="14" fill="#5B6678">每个数据集内部使用 70%/30% 分层随机划分；纵轴从 0.85 开始以突出差异。</text>
+
+  <rect x="58" y="116" width="904" height="430" rx="8" fill="#FFFFFF" stroke="#D9DEE8"/>
+  <line x1="116" y1="520" x2="920" y2="520" stroke="#B8C0CC"/>
+  <line x1="116" y1="190" x2="116" y2="520" stroke="#B8C0CC"/>
+
+  <line x1="116" y1="520" x2="920" y2="520" stroke="#EEF1F5"/>
+  <line x1="116" y1="410" x2="920" y2="410" stroke="#EEF1F5"/>
+  <line x1="116" y1="300" x2="920" y2="300" stroke="#EEF1F5"/>
+  <line x1="116" y1="190" x2="920" y2="190" stroke="#EEF1F5"/>
+  <text x="104" y="524" font-family="Arial" font-size="12" fill="#6B7280" text-anchor="end">0.85</text>
+  <text x="104" y="414" font-family="Arial" font-size="12" fill="#6B7280" text-anchor="end">0.90</text>
+  <text x="104" y="304" font-family="Arial" font-size="12" fill="#6B7280" text-anchor="end">0.95</text>
+  <text x="104" y="194" font-family="Arial" font-size="12" fill="#6B7280" text-anchor="end">1.00</text>
+
+  <rect x="150" y="203.3" width="72" height="316.7" rx="5" fill="#2F6FED"/>
+  <text x="186" y="193" font-family="Arial" font-size="13" font-weight="700" fill="#172033" text-anchor="middle">0.9940</text>
+  <text x="186" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">AST</text>
+
+  <rect x="310" y="218.6" width="72" height="301.4" rx="5" fill="#2E9D68"/>
+  <text x="346" y="208" font-family="Arial" font-size="13" font-weight="700" fill="#172033" text-anchor="middle">0.9870</text>
+  <text x="346" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">SMS 20k</text>
+
+  <rect x="470" y="202.5" width="72" height="317.5" rx="5" fill="#18A0A7"/>
+  <text x="506" y="192" font-family="Arial" font-size="13" font-weight="700" fill="#172033" text-anchor="middle">0.9943</text>
+  <text x="506" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">FBS mixed</text>
+
+  <rect x="630" y="391.3" width="72" height="128.7" rx="5" fill="#D96C4A"/>
+  <text x="666" y="381" font-family="Arial" font-size="13" font-weight="700" fill="#172033" text-anchor="middle">0.9085</text>
+  <text x="666" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">HF spam</text>
+
+  <rect x="790" y="235.5" width="72" height="284.5" rx="5" fill="#9A6DDF"/>
+  <text x="826" y="225" font-family="Arial" font-size="13" font-weight="700" fill="#172033" text-anchor="middle">0.9793</text>
+  <text x="826" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">HF conv</text>
+</svg>
