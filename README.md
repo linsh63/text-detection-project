@@ -80,10 +80,10 @@ python -m src.rule_free_csn.experiment \
 
 在课程数据 `70%/30%` 分层划分上：
 
-| 方法 | Accuracy | Precision | Recall | Spam F1 | FP | FN |
-|---|---:|---:|---:|---:|---:|---:|
-| TF-IDF+SVM | 0.9940 | 0.9961 | 0.9952 | 0.9956 | 13 | 16 |
-| Rule-free CSN+LR | 0.9715 | 0.9847 | 0.9737 | 0.9791 | 50 | 87 |
+| 方法 | Accuracy | Spam F1 |
+|---|---:|---:|
+| TF-IDF+SVM | 0.9940 | 0.9956 |
+| Rule-free CSN+LR | 0.9715 | 0.9791 |
 
 主模型建议使用 **TF-IDF+SVM**，因为它结构最简洁、误报更少、解释成本低。Rule-free CSN+LR 可作为课程要求中“字符相似性网络、字符嵌入、句子嵌入”的实现版本。
 
@@ -92,6 +92,7 @@ python -m src.rule_free_csn.experiment \
 - `docs/experiment_report.md`：模型原理与评测结果
 - `docs/bad_cases.md`：误报、漏检样本分析
 - `docs/metrics_comparison.svg`：指标对比图
+- `src/tfidf_svm_baseline/generate_figures.py`：生成报告中的两张 SVG 图
 
 ## 提交前检查
 

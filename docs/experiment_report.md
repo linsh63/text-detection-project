@@ -48,14 +48,14 @@
 
 因此，Rule-free CSN+LR 不再使用 `TF-IDF + Linear SVM` 作为主体，而是“字符相似性网络 + 句子嵌入 + 逻辑回归”。
 
-## 评测结果
+## AST 评测结果
 
-| 方法 | Accuracy | Precision | Recall | Spam F1 | FP | FN |
-|---|---:|---:|---:|---:|---:|---:|
-| Majority baseline | 0.6877 | 0.6877 | 1.0000 | 0.8150 | 1500 | 0 |
-| TF-IDF+LR baseline | 0.9904 | 0.9945 | 0.9915 | 0.9930 | 18 | 28 |
-| TF-IDF+SVM | 0.9940 | 0.9961 | 0.9952 | 0.9956 | 13 | 16 |
-| Rule-free CSN+LR | 0.9715 | 0.9847 | 0.9737 | 0.9791 | 50 | 87 |
+| 方法 | Accuracy | Spam F1 |
+|---|---:|---:|
+| Majority baseline | 0.6877 | 0.8150 |
+| TF-IDF+LR baseline | 0.9904 | 0.9930 |
+| TF-IDF+SVM | 0.9940 | 0.9956 |
+| Rule-free CSN+LR | 0.9715 | 0.9791 |
 
 ![指标对比](metrics_comparison.svg)
 
@@ -91,4 +91,6 @@ python -m src.tfidf_svm_baseline.experiment \
 
 python -m src.rule_free_csn.experiment \
   --data data/raw/dataset.txt
+
+python -m src.tfidf_svm_baseline.generate_figures
 ```

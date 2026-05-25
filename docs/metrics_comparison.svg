@@ -1,70 +1,521 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1020" height="660" viewBox="0 0 1020 660" role="img" aria-label="TF-IDF SVM and course-style rule-free CSN metric comparison">
-  <rect width="1020" height="660" fill="#F6F8FB"/>
-  <text x="44" y="54" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="26" font-weight="800" fill="#172033">AST 测试集：模型指标对比</text>
-  <text x="44" y="82" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="14" fill="#5B6678">左图展示 Spam F1；右图突出强 baseline 与课件版 CSN 在误报/漏检上的差距。</text>
-
-  <rect x="44" y="116" width="430" height="460" rx="8" fill="#FFFFFF" stroke="#D9DEE8"/>
-  <text x="70" y="152" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="700" fill="#172033">Spam F1</text>
-  <text x="418" y="152" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#6B7280" text-anchor="end">越高越好</text>
-  <line x1="116" y1="520" x2="430" y2="520" stroke="#B8C0CC"/>
-  <line x1="116" y1="190" x2="116" y2="520" stroke="#B8C0CC"/>
-  <line x1="116" y1="520" x2="430" y2="520" stroke="#EEF1F5"/>
-  <line x1="116" y1="437.5" x2="430" y2="437.5" stroke="#EEF1F5"/>
-  <line x1="116" y1="355" x2="430" y2="355" stroke="#EEF1F5"/>
-  <line x1="116" y1="272.5" x2="430" y2="272.5" stroke="#EEF1F5"/>
-  <line x1="116" y1="190" x2="430" y2="190" stroke="#EEF1F5"/>
-  <text x="106" y="524" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">0.80</text>
-  <text x="106" y="441.5" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">0.85</text>
-  <text x="106" y="359" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">0.90</text>
-  <text x="106" y="276.5" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">0.95</text>
-  <text x="106" y="194" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">1.00</text>
-
-  <rect x="146" y="495.3" width="48" height="24.7" rx="4" fill="#98A2B3"/>
-  <rect x="218" y="201.5" width="48" height="318.5" rx="4" fill="#9A6DDF"/>
-  <rect x="290" y="197.3" width="48" height="322.7" rx="4" fill="#2F6FED"/>
-  <rect x="362" y="224.4" width="48" height="295.6" rx="4" fill="#2E9D68"/>
-  <text x="170" y="489" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">0.815</text>
-  <text x="242" y="196" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">0.993</text>
-  <text x="314" y="191" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">0.996</text>
-  <text x="386" y="218" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">0.979</text>
-  <text x="170" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" fill="#334155" text-anchor="middle">Majority</text>
-  <text x="242" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" fill="#334155" text-anchor="middle">TF-IDF+LR</text>
-  <text x="314" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" fill="#334155" text-anchor="middle">TF-IDF+SVM</text>
-  <text x="386" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11" fill="#334155" text-anchor="middle">CSN+LR</text>
-
-  <rect x="520" y="116" width="456" height="460" rx="8" fill="#FFFFFF" stroke="#D9DEE8"/>
-  <text x="546" y="152" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="700" fill="#172033">错误数对比</text>
-  <text x="918" y="152" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#6B7280" text-anchor="end">越低越好</text>
-  <line x1="594" y1="520" x2="930" y2="520" stroke="#B8C0CC"/>
-  <line x1="594" y1="190" x2="594" y2="520" stroke="#B8C0CC"/>
-  <line x1="594" y1="410" x2="930" y2="410" stroke="#EEF1F5"/>
-  <line x1="594" y1="300" x2="930" y2="300" stroke="#EEF1F5"/>
-  <line x1="594" y1="190" x2="930" y2="190" stroke="#EEF1F5"/>
-  <text x="584" y="524" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">0</text>
-  <text x="584" y="414" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">30</text>
-  <text x="584" y="304" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">60</text>
-  <text x="584" y="194" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">90</text>
-
-  <rect x="642" y="454" width="34" height="66" rx="4" fill="#D96C4A"/>
-  <rect x="680" y="417.3" width="34" height="102.7" rx="4" fill="#5D6B7A"/>
-  <text x="659" y="448" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">18</text>
-  <text x="697" y="411" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">28</text>
-  <text x="678" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">TF-IDF+LR</text>
-
-  <rect x="760" y="472.3" width="34" height="47.7" rx="4" fill="#D96C4A"/>
-  <rect x="798" y="461.3" width="34" height="58.7" rx="4" fill="#5D6B7A"/>
-  <text x="777" y="466" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">13</text>
-  <text x="815" y="455" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">16</text>
-  <text x="796" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">TF-IDF+SVM</text>
-
-  <rect x="878" y="336.7" width="34" height="183.3" rx="4" fill="#D96C4A"/>
-  <rect x="916" y="201" width="34" height="319" rx="4" fill="#5D6B7A"/>
-  <text x="895" y="331" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">50</text>
-  <text x="933" y="195" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">87</text>
-  <text x="914" y="548" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">CSN+LR</text>
-
-  <rect x="744" y="130" width="14" height="14" rx="3" fill="#D96C4A"/>
-  <text x="764" y="142" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155">FP 误报</text>
-  <rect x="826" y="130" width="14" height="14" rx="3" fill="#5D6B7A"/>
-  <text x="846" y="142" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155">FN 漏检</text>
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="864pt" height="417.6pt" viewBox="0 0 864 417.6" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-05-25T23:35:30.853208</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.9, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 417.6 
+L 864 417.6 
+L 864 0 
+L 0 0 
+z
+" style="fill: #f6f8fb"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 42.611178 380.614892 
+L 427.68 380.614892 
+L 427.68 43.93197 
+L 42.611178 43.93197 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <defs>
+       <path id="m18f5efb7a8" d="M 0 0 
+L 0 3.5 
+" style="stroke: #334155; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m18f5efb7a8" x="88.471329" y="380.614892" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; fill: #334155" transform="translate(54.532443 405.238937) rotate(-18)">Majority</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2">
+      <g>
+       <use xlink:href="#m18f5efb7a8" x="186.254169" y="380.614892" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; fill: #334155" transform="translate(137.822697 409.958689) rotate(-18)">TF-IDF+LR</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#m18f5efb7a8" x="284.037009" y="380.614892" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; fill: #334155" transform="translate(227.153022 412.705077) rotate(-18)">TF-IDF+SVM</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m18f5efb7a8" x="381.819848" y="380.614892" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; fill: #334155" transform="translate(343.41162 406.701939) rotate(-18)">CSN+LR</text>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_5">
+      <path d="M 42.611178 380.614892 
+L 427.68 380.614892 
+" clip-path="url(#pac96ad5b93)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_6">
+      <defs>
+       <path id="m71ae983a41" d="M 0 0 
+L -3.5 0 
+" style="stroke: #334155; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m71ae983a41" x="42.611178" y="380.614892" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="35.611178" y="384.193798" transform="rotate(-0 35.611178 384.193798)">0.65</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_7">
+      <path d="M 42.611178 335.1172 
+L 427.68 335.1172 
+" clip-path="url(#pac96ad5b93)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m71ae983a41" x="42.611178" y="335.1172" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="35.611178" y="338.696106" transform="rotate(-0 35.611178 338.696106)">0.70</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_9">
+      <path d="M 42.611178 289.619508 
+L 427.68 289.619508 
+" clip-path="url(#pac96ad5b93)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m71ae983a41" x="42.611178" y="289.619508" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="35.611178" y="293.198414" transform="rotate(-0 35.611178 293.198414)">0.75</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_11">
+      <path d="M 42.611178 244.121816 
+L 427.68 244.121816 
+" clip-path="url(#pac96ad5b93)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m71ae983a41" x="42.611178" y="244.121816" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="35.611178" y="247.700722" transform="rotate(-0 35.611178 247.700722)">0.80</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_13">
+      <path d="M 42.611178 198.624123 
+L 427.68 198.624123 
+" clip-path="url(#pac96ad5b93)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#m71ae983a41" x="42.611178" y="198.624123" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="35.611178" y="202.20303" transform="rotate(-0 35.611178 202.20303)">0.85</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_15">
+      <path d="M 42.611178 153.126431 
+L 427.68 153.126431 
+" clip-path="url(#pac96ad5b93)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_16">
+      <g>
+       <use xlink:href="#m71ae983a41" x="42.611178" y="153.126431" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="35.611178" y="156.705337" transform="rotate(-0 35.611178 156.705337)">0.90</text>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_17">
+      <path d="M 42.611178 107.628739 
+L 427.68 107.628739 
+" clip-path="url(#pac96ad5b93)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_18">
+      <g>
+       <use xlink:href="#m71ae983a41" x="42.611178" y="107.628739" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="35.611178" y="111.207645" transform="rotate(-0 35.611178 111.207645)">0.95</text>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_19">
+      <path d="M 42.611178 62.131047 
+L 427.68 62.131047 
+" clip-path="url(#pac96ad5b93)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_20">
+      <g>
+       <use xlink:href="#m71ae983a41" x="42.611178" y="62.131047" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_12">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="35.611178" y="65.709953" transform="rotate(-0 35.611178 65.709953)">1.00</text>
+     </g>
+    </g>
+    <g id="text_13">
+     <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="10.158053" y="212.273431" transform="rotate(-90 10.158053 212.273431)">Score</text>
+    </g>
+   </g>
+   <g id="patch_3">
+    <path d="M 60.114306 972.08489 
+L 116.828353 972.08489 
+L 116.828353 346.309632 
+L 60.114306 346.309632 
+z
+" clip-path="url(#pac96ad5b93)" style="fill: #2f6fed"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 157.897145 972.08489 
+L 214.611192 972.08489 
+L 214.611192 70.866604 
+L 157.897145 70.866604 
+z
+" clip-path="url(#pac96ad5b93)" style="fill: #2f6fed"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 255.679985 972.08489 
+L 312.394032 972.08489 
+L 312.394032 67.59077 
+L 255.679985 67.59077 
+z
+" clip-path="url(#pac96ad5b93)" style="fill: #2f6fed"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 353.462825 972.08489 
+L 410.176872 972.08489 
+L 410.176872 88.064731 
+L 353.462825 88.064731 
+z
+" clip-path="url(#pac96ad5b93)" style="fill: #2f6fed"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 42.611178 380.614892 
+L 42.611178 43.93197 
+" style="fill: none; stroke: #d9dee8; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 42.611177 380.614892 
+L 427.68 380.614892 
+" style="fill: none; stroke: #d9dee8; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_14">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="88.471329" y="340.677629" transform="rotate(-0 88.471329 340.677629)">0.6877</text>
+   </g>
+   <g id="text_15">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="186.254169" y="65.234601" transform="rotate(-0 186.254169 65.234601)">0.9904</text>
+   </g>
+   <g id="text_16">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="284.037009" y="61.958767" transform="rotate(-0 284.037009 61.958767)">0.9940</text>
+   </g>
+   <g id="text_17">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="381.819848" y="82.432729" transform="rotate(-0 381.819848 82.432729)">0.9715</text>
+   </g>
+   <g id="text_18">
+    <text style="font-weight: 700; font-size: 14px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="235.145589" y="37.93197" transform="rotate(-0 235.145589 37.93197)">Accuracy</text>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_9">
+    <path d="M 475.930937 380.614892 
+L 860.99976 380.614892 
+L 860.99976 43.93197 
+L 475.930937 43.93197 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_3">
+    <g id="xtick_5">
+     <g id="line2d_21">
+      <g>
+       <use xlink:href="#m18f5efb7a8" x="521.791089" y="380.614892" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_19">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; fill: #334155" transform="translate(487.852203 405.238937) rotate(-18)">Majority</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_22">
+      <g>
+       <use xlink:href="#m18f5efb7a8" x="619.573929" y="380.614892" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_20">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; fill: #334155" transform="translate(571.142457 409.958689) rotate(-18)">TF-IDF+LR</text>
+     </g>
+    </g>
+    <g id="xtick_7">
+     <g id="line2d_23">
+      <g>
+       <use xlink:href="#m18f5efb7a8" x="717.356769" y="380.614892" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_21">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; fill: #334155" transform="translate(660.472782 412.705077) rotate(-18)">TF-IDF+SVM</text>
+     </g>
+    </g>
+    <g id="xtick_8">
+     <g id="line2d_24">
+      <g>
+       <use xlink:href="#m18f5efb7a8" x="815.139608" y="380.614892" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_22">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; fill: #334155" transform="translate(776.73138 406.701939) rotate(-18)">CSN+LR</text>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_4">
+    <g id="ytick_9">
+     <g id="line2d_25">
+      <path d="M 475.930937 380.614892 
+L 860.99976 380.614892 
+" clip-path="url(#p2e60153cf4)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_26">
+      <g>
+       <use xlink:href="#m71ae983a41" x="475.930937" y="380.614892" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_23">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="468.930937" y="384.193798" transform="rotate(-0 468.930937 384.193798)">0.65</text>
+     </g>
+    </g>
+    <g id="ytick_10">
+     <g id="line2d_27">
+      <path d="M 475.930937 335.1172 
+L 860.99976 335.1172 
+" clip-path="url(#p2e60153cf4)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_28">
+      <g>
+       <use xlink:href="#m71ae983a41" x="475.930937" y="335.1172" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_24">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="468.930937" y="338.696106" transform="rotate(-0 468.930937 338.696106)">0.70</text>
+     </g>
+    </g>
+    <g id="ytick_11">
+     <g id="line2d_29">
+      <path d="M 475.930937 289.619508 
+L 860.99976 289.619508 
+" clip-path="url(#p2e60153cf4)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_30">
+      <g>
+       <use xlink:href="#m71ae983a41" x="475.930937" y="289.619508" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_25">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="468.930937" y="293.198414" transform="rotate(-0 468.930937 293.198414)">0.75</text>
+     </g>
+    </g>
+    <g id="ytick_12">
+     <g id="line2d_31">
+      <path d="M 475.930937 244.121816 
+L 860.99976 244.121816 
+" clip-path="url(#p2e60153cf4)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_32">
+      <g>
+       <use xlink:href="#m71ae983a41" x="475.930937" y="244.121816" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_26">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="468.930937" y="247.700722" transform="rotate(-0 468.930937 247.700722)">0.80</text>
+     </g>
+    </g>
+    <g id="ytick_13">
+     <g id="line2d_33">
+      <path d="M 475.930937 198.624123 
+L 860.99976 198.624123 
+" clip-path="url(#p2e60153cf4)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_34">
+      <g>
+       <use xlink:href="#m71ae983a41" x="475.930937" y="198.624123" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_27">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="468.930937" y="202.20303" transform="rotate(-0 468.930937 202.20303)">0.85</text>
+     </g>
+    </g>
+    <g id="ytick_14">
+     <g id="line2d_35">
+      <path d="M 475.930937 153.126431 
+L 860.99976 153.126431 
+" clip-path="url(#p2e60153cf4)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_36">
+      <g>
+       <use xlink:href="#m71ae983a41" x="475.930937" y="153.126431" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_28">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="468.930937" y="156.705337" transform="rotate(-0 468.930937 156.705337)">0.90</text>
+     </g>
+    </g>
+    <g id="ytick_15">
+     <g id="line2d_37">
+      <path d="M 475.930937 107.628739 
+L 860.99976 107.628739 
+" clip-path="url(#p2e60153cf4)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_38">
+      <g>
+       <use xlink:href="#m71ae983a41" x="475.930937" y="107.628739" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_29">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="468.930937" y="111.207645" transform="rotate(-0 468.930937 111.207645)">0.95</text>
+     </g>
+    </g>
+    <g id="ytick_16">
+     <g id="line2d_39">
+      <path d="M 475.930937 62.131047 
+L 860.99976 62.131047 
+" clip-path="url(#p2e60153cf4)" style="fill: none; stroke: #d9dee8; stroke-opacity: 0.85; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_40">
+      <g>
+       <use xlink:href="#m71ae983a41" x="475.930937" y="62.131047" style="fill: #334155; stroke: #334155; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_30">
+      <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #334155" x="468.930937" y="65.709953" transform="rotate(-0 468.930937 65.709953)">1.00</text>
+     </g>
+    </g>
+    <g id="text_31">
+     <text style="font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="443.477812" y="212.273431" transform="rotate(-90 443.477812 212.273431)">Score</text>
+    </g>
+   </g>
+   <g id="patch_10">
+    <path d="M 493.434066 972.08489 
+L 550.148113 972.08489 
+L 550.148113 230.472508 
+L 493.434066 230.472508 
+z
+" clip-path="url(#p2e60153cf4)" style="fill: #2e9d68"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 591.216905 972.08489 
+L 647.930952 972.08489 
+L 647.930952 68.500724 
+L 591.216905 68.500724 
+z
+" clip-path="url(#p2e60153cf4)" style="fill: #2e9d68"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 688.999745 972.08489 
+L 745.713792 972.08489 
+L 745.713792 66.134844 
+L 688.999745 66.134844 
+z
+" clip-path="url(#p2e60153cf4)" style="fill: #2e9d68"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 786.782585 972.08489 
+L 843.496632 972.08489 
+L 843.496632 81.149082 
+L 786.782585 81.149082 
+z
+" clip-path="url(#p2e60153cf4)" style="fill: #2e9d68"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 475.930937 380.614892 
+L 475.930937 43.93197 
+" style="fill: none; stroke: #d9dee8; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 475.930937 380.614892 
+L 860.99976 380.614892 
+" style="fill: none; stroke: #d9dee8; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_32">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="521.791089" y="224.840505" transform="rotate(-0 521.791089 224.840505)">0.8150</text>
+   </g>
+   <g id="text_33">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="619.573929" y="62.868721" transform="rotate(-0 619.573929 62.868721)">0.9930</text>
+   </g>
+   <g id="text_34">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="717.356769" y="60.502841" transform="rotate(-0 717.356769 60.502841)">0.9956</text>
+   </g>
+   <g id="text_35">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="815.139608" y="75.517079" transform="rotate(-0 815.139608 75.517079)">0.9791</text>
+   </g>
+   <g id="text_36">
+    <text style="font-weight: 700; font-size: 14px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="668.465349" y="37.93197" transform="rotate(-0 668.465349 37.93197)">Spam F1</text>
+   </g>
+  </g>
+  <g id="text_37">
+   <text style="font-weight: 700; font-size: 18px; font-family: 'PingFang SC', 'Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="432" y="17.959927" transform="rotate(-0 432 17.959927)">AST 测试集：Accuracy 与 Spam F1</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pac96ad5b93">
+   <rect x="42.611178" y="43.93197" width="385.068822" height="336.682922"/>
+  </clipPath>
+  <clipPath id="p2e60153cf4">
+   <rect x="475.930937" y="43.93197" width="385.068823" height="336.682922"/>
+  </clipPath>
+ </defs>
 </svg>
