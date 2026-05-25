@@ -1,9 +1,5 @@
-"""Utilities for adversarial spam text detection."""
+"""Utilities for traditional machine-learning spam text detection."""
 
-__all__ = [
-    "clean_text",
-    "char_tokenize",
-    "word_tokenize",
-]
+from .features import char_tokenize, clean_text
 
-from .features.preprocess import char_tokenize, clean_text, word_tokenize
+__all__ = ["clean_text", "char_tokenize"]

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="620" viewBox="0 0 980 620" role="img" aria-label="v1 指标对比图">
+  <rect width="980" height="620" fill="#F6F8FB"/>
+  <text x="42" y="54" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="26" font-weight="800" fill="#172033">AST 测试集指标对比</text>
+  <text x="42" y="82" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="14" fill="#5B6678">F1 都很高，因此用误报 FP / 漏检 FN 拉开差距；v1 在简单性和错误控制之间最均衡。</text>
+
+  <rect x="42" y="116" width="896" height="288" rx="8" fill="#FFFFFF" stroke="#D9DEE8"/>
+  <text x="70" y="152" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="700" fill="#172033">错误数量对比</text>
+  <text x="870" y="152" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#6B7280" text-anchor="end">越低越好</text>
+
+  <line x1="116" y1="350" x2="900" y2="350" stroke="#B8C0CC"/>
+  <line x1="116" y1="184" x2="116" y2="350" stroke="#B8C0CC"/>
+  <line x1="116" y1="294.7" x2="900" y2="294.7" stroke="#EEF1F5"/>
+  <line x1="116" y1="239.3" x2="900" y2="239.3" stroke="#EEF1F5"/>
+  <line x1="116" y1="184" x2="900" y2="184" stroke="#EEF1F5"/>
+  <text x="106" y="354" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">0</text>
+  <text x="106" y="298.7" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">25</text>
+  <text x="106" y="243.3" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">50</text>
+  <text x="106" y="188" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">75</text>
+
+  <rect x="164" y="310.1" width="34" height="39.9" rx="4" fill="#D96C4A"/>
+  <rect x="202" y="283.6" width="34" height="66.4" rx="4" fill="#5D6B7A"/>
+  <text x="200" y="376" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">v0 LR</text>
+  <text x="181" y="304" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">18</text>
+  <text x="219" y="277" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">30</text>
+
+  <rect x="342" y="325.6" width="34" height="24.4" rx="4" fill="#D96C4A"/>
+  <rect x="380" y="310.1" width="34" height="39.9" rx="4" fill="#5D6B7A"/>
+  <text x="378" y="376" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">v1 SVM</text>
+  <text x="359" y="319" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">11</text>
+  <text x="397" y="304" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">18</text>
+
+  <rect x="520" y="341.1" width="34" height="8.9" rx="4" fill="#D96C4A"/>
+  <rect x="558" y="210.5" width="34" height="139.5" rx="4" fill="#5D6B7A"/>
+  <text x="556" y="376" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">v4 高阈值</text>
+  <text x="537" y="335" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">4</text>
+  <text x="575" y="204" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">63</text>
+
+  <rect x="698" y="310.1" width="34" height="39.9" rx="4" fill="#D96C4A"/>
+  <rect x="736" y="323.4" width="34" height="26.6" rx="4" fill="#5D6B7A"/>
+  <text x="734" y="376" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155" text-anchor="middle">v5 融合</text>
+  <text x="715" y="304" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">18</text>
+  <text x="753" y="317" font-family="Arial" font-size="12" font-weight="700" fill="#172033" text-anchor="middle">12</text>
+
+  <rect x="770" y="130" width="14" height="14" rx="3" fill="#D96C4A"/>
+  <text x="790" y="142" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155">FP 误报</text>
+  <rect x="850" y="130" width="14" height="14" rx="3" fill="#5D6B7A"/>
+  <text x="870" y="142" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" fill="#334155">FN 漏检</text>
+
+  <rect x="42" y="430" width="896" height="136" rx="8" fill="#FFFFFF" stroke="#D9DEE8"/>
+  <text x="70" y="466" font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="700" fill="#172033">Spam F1（缩放轴 0.985-1.000）</text>
+  <line x1="146" y1="526" x2="890" y2="526" stroke="#B8C0CC"/>
+  <line x1="146" y1="486" x2="146" y2="526" stroke="#B8C0CC"/>
+  <text x="136" y="530" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">0.985</text>
+  <text x="136" y="490" font-family="Arial" font-size="11" fill="#6B7280" text-anchor="end">1.000</text>
+
+  <rect x="180" y="505.5" width="92" height="20.5" rx="4" fill="#9A6DDF"/>
+  <rect x="360" y="497.3" width="92" height="28.7" rx="4" fill="#2F6FED"/>
+  <rect x="540" y="513.3" width="92" height="12.7" rx="4" fill="#E0A12F"/>
+  <rect x="720" y="497.6" width="92" height="28.4" rx="4" fill="#2E9D68"/>
+  <text x="226" y="546" font-family="Arial" font-size="12" fill="#334155" text-anchor="middle">0.9927</text>
+  <text x="406" y="546" font-family="Arial" font-size="12" fill="#334155" text-anchor="middle">0.9956</text>
+  <text x="586" y="546" font-family="Arial" font-size="12" fill="#334155" text-anchor="middle">0.9898</text>
+  <text x="766" y="546" font-family="Arial" font-size="12" fill="#334155" text-anchor="middle">0.9955</text>
+</svg>
