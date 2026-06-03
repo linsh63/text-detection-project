@@ -76,6 +76,42 @@ python -m src.rule_free_csn.experiment \
   --data data/raw/dataset.txt
 ```
 
+## 启动 API
+
+API 使用 `TF-IDF+SVM` 作为默认检测模型。启动后首次预测会读取 `data/raw/dataset.txt` 训练模型并缓存。
+
+```bash
+python -m uvicorn src.tfidf_svm_baseline.api:app --host 0.0.0.0 --port 8000
+```
+
+请求示例：
+
+```bash
+curl -X POST http://127.0.0.1:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"text":"加我领取优惠，回T退订"}'
+```
+
+响应体是布尔值：
+
+```json
+true
+```
+
+如需指定其他训练数据：
+
+```bash
+TEXT_DETECTION_DATA=data/processed/ast_dataset.tsv \
+python -m uvicorn src.tfidf_svm_baseline.api:app --host 0.0.0.0 --port 8000
+```
+
+如需保存或复用模型文件：
+
+```bash
+TEXT_DETECTION_MODEL=models/tfidf_svm.joblib \
+python -m uvicorn src.tfidf_svm_baseline.api:app --host 0.0.0.0 --port 8000
+```
+
 ## 当前结果
 
 在课程数据 `70%/30%` 分层划分上：
@@ -100,5 +136,6 @@ python -m src.rule_free_csn.experiment \
 python -m compileall src
 python -m src.tfidf_svm_baseline.experiment --data data/raw/dataset.txt
 python -m src.rule_free_csn.experiment --data data/raw/dataset.txt
+python -m uvicorn src.tfidf_svm_baseline.api:app --host 127.0.0.1 --port 8000
 git status
 ```
